@@ -10,10 +10,13 @@ def main():
 
     # used dimensions
     BOARD_SIZE = 1024
-    DISPLAY_WIDTH = 1820  # approximatly = 1024 * 16/9
-    DISPLAY_HEIGHT = 1024
+    screen_w = root.winfo_screenwidth()  # approximatly = 1024 * 16/9
+    screen_h = root.winfo_screenheight()
     ACTOR_SIZE = 89
-    root.geometry(f"{DISPLAY_WIDTH}x{DISPLAY_HEIGHT}")
+
+    fit_size = min(screen_w, screen_h)
+    scale = BOARD_SIZE / fit_size
+    root.geometry(f"{screen_w}x{screen_h}")
 
     # used paths
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,8 +34,8 @@ def main():
     # create the canvas
     canvas = tk.Canvas(
         root,
-        width=DISPLAY_WIDTH,
-        height=DISPLAY_HEIGHT,
+        width=screen_w,
+        height=screen_h,
         highlightthickness=0,
         bg="#F5EDDA",
     )  # to be with screen's width
@@ -41,16 +44,19 @@ def main():
     # load the png file (GameBoard)
     try:
         board_img = Image.open(board_path).resize(
-            (BOARD_SIZE, BOARD_SIZE), Image.LANCZOS
+            (int(BOARD_SIZE / scale), int(BOARD_SIZE / scale)), Image.LANCZOS
         )
 
         # Convert to be as Tkinter Image
         main_board = ImageTk.PhotoImage(board_img)
 
         # place the image to be centered
+
+        root.update_idletasks()
+        titlebar_h = root.winfo_rooty() - root.winfo_y()
         canvas.create_image(
-            canvas_width // 2,
-            canvas_height // 2,
+            screen_w // 2,
+            screen_h // 2 - titlebar_h //2,
             image=main_board,
             anchor=tk.CENTER,
             tags="board",
