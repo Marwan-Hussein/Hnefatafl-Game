@@ -1,20 +1,13 @@
 import tkinter as tk
 import config
 from PIL import Image, ImageTk
-import pyglet
+from playsound import playsound
 import os
+import threading
 
 
 def play_background_music():
-    audio_file = os.path.join(config.CURRENT_DIR, "assets", "audio", "Nordic-Folk.ogg")
-    print(audio_file)
-    music = pyglet.media.load(audio_file, streaming=False)
-    player = pyglet.media.Player()
-    player.queue(music)
-    player.loop = True
-    player.play()
-
-    return player
+    playsound(os.path.join(config.CURRENT_DIR, "assets", "audio", "Nordic-Folk.ogg"))
 
 
 def main():
@@ -80,12 +73,7 @@ def main():
     except Exception as e:
         print(f"Faild to load PNG: {e}")
 
-    player = play_background_music()
-    def update_audio():
-        pyglet.clock.tick()
-        root.after(10, update_audio)
-
-    update_audio()
+    threading.Thread(target=play_background_music, daemon=True).start()
     root.mainloop()
 
 

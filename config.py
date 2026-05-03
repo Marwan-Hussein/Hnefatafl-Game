@@ -1,4 +1,5 @@
 import itertools
+import os
 CELL_SIZE = 93
 
 #   ========    HELPERS     ==========
@@ -53,3 +54,4 @@ ACTOR_SIZE = 89
 AVAILABLE_BOARD_POSITIONS, KING_POSITION = positions()
 ATTACKERS_POSITIONS = attacker_positions()
 DEFENDER_POSITIONS = defender_positions()
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
