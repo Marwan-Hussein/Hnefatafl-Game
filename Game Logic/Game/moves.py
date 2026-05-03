@@ -1,6 +1,6 @@
 BOARD_SIZE = 9
 
-EMPTY = "."
+EMPTY = " "
 ATTACKER = "A"
 DEFENDER = "D"
 KING = "K"
