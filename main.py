@@ -1,4 +1,5 @@
 import tkinter as tk
+import config
 from PIL import Image, ImageTk
 import os
 
@@ -9,13 +10,11 @@ def main():
     root.title("Hnefatafl Game")
 
     # used dimensions
-    BOARD_SIZE = 1024
     screen_w = root.winfo_screenwidth()  # approximatly = 1024 * 16/9
     screen_h = root.winfo_screenheight()
-    ACTOR_SIZE = 89
 
     fit_size = min(screen_w, screen_h)
-    scale = BOARD_SIZE / fit_size
+    scale = config.BOARD_SIZE / fit_size
     root.geometry(f"{screen_w}x{screen_h}")
 
     # used paths
@@ -44,7 +43,7 @@ def main():
     # load the png file (GameBoard)
     try:
         board_img = Image.open(board_path).resize(
-            (int(BOARD_SIZE / scale), int(BOARD_SIZE / scale)), Image.LANCZOS
+            (int(config.BOARD_SIZE / scale), int(config.BOARD_SIZE / scale)), Image.LANCZOS
         )
 
         # Convert to be as Tkinter Image
