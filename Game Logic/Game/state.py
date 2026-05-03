@@ -43,9 +43,20 @@ class GameState:
         return board
 
     def print_board(self):
-        print("  " + " ".join(str(i) for i in range(BOARD_SIZE)))
-        for i, row in enumerate(self.board):
-            print(i, " ".join(row))
+        size = BOARD_SIZE
+        print("    " + "   ".join(chr(ord('A') + i) for i in range(size)))
+        print("   +" + "---+" * size)
+        for i in range(size):
+            row_num = size - i
+            row_str = f"{row_num:2} |"
+            for j in range(size):
+                row_str += f" {self.board[i][j]} |"
+            print(row_str)
+
+            if i < size - 1:
+                print("   +" + "---+" * size)
+
+        print("   +" + "---+" * size)
 
     def get_piece(self, row, col):
         return self.board[row][col]
