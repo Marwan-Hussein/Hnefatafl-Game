@@ -52,16 +52,13 @@ class GameState:
     def print_board(self):
         size = BOARD_SIZE
 
-        # Column headers (A B C ...)
         print("    " + "   ".join(chr(ord('A') + i) for i in range(size)))
 
-        # Top border
         print("   +" + "---+" * size)
 
         for i in range(size):
             row_num =  i + 1
 
-            # Row content
             row_str = f"{row_num:2} |"
             for j in range(size):
                 cell = self.board[i][j] if self.board[i][j] != "" else " "
@@ -69,7 +66,6 @@ class GameState:
 
             print(row_str)
 
-            # Separator
             print("   +" + "---+" * size)
     def get_piece(self, row, col):
         return self.board[row][col]
