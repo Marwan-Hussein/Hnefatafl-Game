@@ -1,9 +1,4 @@
-BOARD_SIZE = 9
-
-EMPTY = " "
-ATTACKER = "A"
-DEFENDER = "D"
-KING = "K"
+from .constants import BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING
 
 
 class GameState:

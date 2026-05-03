@@ -1,25 +1,7 @@
-BOARD_SIZE = 9
-
-EMPTY = " "
-ATTACKER = "A"
-DEFENDER = "D"
-KING = "K"
-
-THRONE = (BOARD_SIZE // 2, BOARD_SIZE // 2)
-CORNERS = {
-    (0, 0),
-    (0, BOARD_SIZE - 1),
-    (BOARD_SIZE - 1, 0),
-    (BOARD_SIZE - 1, BOARD_SIZE - 1),
-}
-
-
-def in_bounds(r, c):
-    return 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE
-
-
-def is_special_square(r, c):
-    return (r, c) == THRONE or (r, c) in CORNERS
+from .constants import (
+    BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING,
+    CORNERS, in_bounds, is_special_square, is_enemy, is_friendly_piece
+)
 
 
 def find_king(board):
@@ -62,32 +44,6 @@ def check_winner(state):
     return None
 
 
-def is_friendly_piece(piece, mover_piece):
-    """
-    King is NOT allowed to assist in capturing opponents.
-    So only A can capture A, and D can capture A.
-    """
-    if mover_piece == ATTACKER:
-        return piece == ATTACKER
-    if mover_piece == DEFENDER:
-        return piece == DEFENDER
-    return False
-
-
-def is_enemy_piece(piece, mover_piece):
-    """
-    What can the moving piece capture?
-    Attacker can capture D and K.
-    Defender can capture A.
-    King cannot capture anyone.
-    """
-    if mover_piece == ATTACKER:
-        return piece in (DEFENDER, KING)
-    if mover_piece == DEFENDER:
-        return piece == ATTACKER
-    return False
-
-
 def capture_if_flanked(state, mover_piece, enemy_r, enemy_c, dr, dc):
     board = state.board
 
@@ -98,7 +54,7 @@ def capture_if_flanked(state, mover_piece, enemy_r, enemy_c, dr, dc):
     if enemy_piece == EMPTY:
         return
 
-    if not is_enemy_piece(enemy_piece, mover_piece):
+    if not is_enemy(enemy_piece, mover_piece):
         return
 
     br, bc = enemy_r + dr, enemy_c + dc
