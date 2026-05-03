@@ -52,7 +52,6 @@ def check_winner(state):
 def check_capture(state, r, c):
     board = state.board
 
-    # 🔥🔥 IMPORTANT FIX (prevents crash)
     if not in_bounds(r, c):
         return
 
@@ -68,7 +67,6 @@ def check_capture(state, r, c):
         r1, c1 = r + dr, c + dc
         r2, c2 = r + 2 * dr, c + 2 * dc
 
-        # ✅ already safe because of this check
         if not (in_bounds(r1, c1) and in_bounds(r2, c2)):
             continue
 
@@ -79,7 +77,6 @@ def check_capture(state, r, c):
 def apply_captures(state, last_move):
     fr, fc, tr, tc = last_move
 
-    # ✅ DO NOT CHANGE THESE
     check_capture(state, tr + 1, tc)
     check_capture(state, tr - 1, tc)
     check_capture(state, tr, tc + 1)
