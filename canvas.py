@@ -32,6 +32,7 @@ class HnefataflGame:
         self.available_move_cells = set()
         self.actor_cells = {}
         self.cell_actors = {}
+        self.game_over = False
 
         self.setup_ui()
         self.draw_board()
@@ -139,6 +140,9 @@ class HnefataflGame:
         return i, j
 
     def on_board_click(self, event):
+        if self.game_over:
+            return
+
         clicked_cell = self.get_clicked_cell(event)
         if clicked_cell is None:
             return
@@ -239,11 +243,43 @@ class HnefataflGame:
         print(f"Moved {actor_tag}: {old_cell} -> {new_cell}")
         self.clear_selection()
 
+        # Rule Processing: Captures and Winner
+        # old_cell and new_cell are (i, j) where i is column and j is row?
+        # Wait, config.cell(i, j) uses i as col, j as row.
+        # But board usually uses (row, col). Let's be consistent with config.
+        last_move = (old_cell[0], old_cell[1], new_cell[0], new_cell[1])
+        winner, captured_cells = config.process_game_step(last_move)
+
+        for cell in captured_cells:
+            tag = self.cell_actors.pop(cell, None)
+            if tag:
+                self.canvas.delete(tag)
+                if tag in self.actor_cells:
+                    del self.actor_cells[tag]
+
+        if winner:
+            self.display_winner(winner)
+            self.game_over = True
+            return
+
         # Switch turns
         self.current_turn_team = (
             "defender" if self.current_turn_team == "attacker" else "attacker"
         )
         self.update_turn_display()
+
+    def display_winner(self, team):
+        # PLAYER' WIN [{team.capitalize()}]
+        text = f"PLAYER' WIN [{team.capitalize()}]"
+        self.canvas.create_text(
+            self.screen_w // 2,
+            self.screen_h // 2,
+            text=text,
+            font=("Georgia", 48, "bold"),
+            fill="#860F0F",
+            tags="winner_msg"
+        )
+        self.turn_label.config(text=text, fg="#860F0F")
 
     def get_actor_type(self, actor_tag):
         if actor_tag == "king":

@@ -1,5 +1,6 @@
-import itertools
 import os
+from game_logic.Game import rules
+from game_logic.Game.constants import ATTACKER, DEFENDER, KING, EMPTY, BOARD_SIZE as LOGIC_BOARD_SIZE
 
 CELL_SIZE = 84
 internal_offset = 175
@@ -85,8 +86,10 @@ OCCUPIED_CELLS = []
 
 def rebuild_occupied_cells():
     global INITIAL_ACTOR_CELLS, OCCUPIED_CELLS
-    INITIAL_ACTOR_CELLS = {KING_CELL} | set(DEFENDER_POSITIONS) | set(
-        ATTACKERS_POSITIONS
+    INITIAL_ACTOR_CELLS = (
+        ({KING_CELL} if KING_CELL else set())
+        | set(DEFENDER_POSITIONS)
+        | set(ATTACKERS_POSITIONS)
     )
     OCCUPIED_CELLS = [
         [0 if (i, j) in INITIAL_ACTOR_CELLS else 1 for j in range(BOARD_CELLS)]
@@ -108,6 +111,62 @@ def update_actor_position(actor_type, old_cell, new_cell):
         ATTACKERS_POSITIONS[new_cell] = cell(*new_cell)
 
     rebuild_occupied_cells()
+
+
+def get_game_board():
+    board = [[EMPTY for _ in range(LOGIC_BOARD_SIZE)] for _ in range(LOGIC_BOARD_SIZE)]
+    for i, j in ATTACKERS_POSITIONS:
+        board[i][j] = ATTACKER
+    for i, j in DEFENDER_POSITIONS:
+        board[i][j] = DEFENDER
+    if KING_CELL:
+        board[KING_CELL[0]][KING_CELL[1]] = KING
+    return board
+
+
+class GameStateProxy:
+    def __init__(self, board):
+        self.board = board
+
+
+def process_game_step(last_move):
+    """
+    last_move: (start_i, start_j, end_i, end_j)
+    Returns: (winner, captured_cells)
+    """
+    board = get_game_board()
+    state = GameStateProxy(board)
+
+    rules.apply_captures(state, last_move)
+
+    # Sync back the board state
+    captured_cells = []
+
+    # Check for removals
+    all_current_cells = (
+        set(ATTACKERS_POSITIONS.keys())
+        | set(DEFENDER_POSITIONS.keys())
+        | ({KING_CELL} if KING_CELL else set())
+    )
+
+    for r in range(LOGIC_BOARD_SIZE):
+        for c in range(LOGIC_BOARD_SIZE):
+            if (r, c) in all_current_cells and board[r][c] == EMPTY:
+                # This piece was captured
+                captured_cells.append((r, c))
+                if (r, c) == KING_CELL:
+                    global KING_CELL, KING_POSITION
+                    KING_CELL = None
+                    KING_POSITION = None
+                elif (r, c) in ATTACKERS_POSITIONS:
+                    ATTACKERS_POSITIONS.pop((r, c))
+                elif (r, c) in DEFENDER_POSITIONS:
+                    DEFENDER_POSITIONS.pop((r, c))
+
+    rebuild_occupied_cells()
+
+    winner = rules.check_winner(state)
+    return winner, captured_cells
 
 
 rebuild_occupied_cells()
