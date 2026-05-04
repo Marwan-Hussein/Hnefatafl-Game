@@ -1,9 +1,4 @@
-BOARD_SIZE = 9
-
-EMPTY = " "
-ATTACKER = "A"
-DEFENDER = "D"
-KING = "K"
+from .constants import BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING
 
 
 class GameState:
@@ -51,20 +46,22 @@ class GameState:
 
     def print_board(self):
         size = BOARD_SIZE
+
         print("    " + "   ".join(chr(ord('A') + i) for i in range(size)))
+
         print("   +" + "---+" * size)
+
         for i in range(size):
-            row_num = size - i
+            row_num =  i + 1
+
             row_str = f"{row_num:2} |"
             for j in range(size):
-                row_str += f" {self.board[i][j]} |"
+                cell = self.board[i][j] if self.board[i][j] != "" else " "
+                row_str += f" {cell} |"
+
             print(row_str)
 
-            if i < size - 1:
-                print("   +" + "---+" * size)
-
-        print("   +" + "---+" * size)
-
+            print("   +" + "---+" * size)
     def get_piece(self, row, col):
         return self.board[row][col]
 
