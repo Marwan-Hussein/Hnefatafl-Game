@@ -185,6 +185,7 @@ class HnefataflGame:
         return 0 <= i < config.BOARD_CELLS and 0 <= j < config.BOARD_CELLS
 
     def show_available_moves(self, start_i, start_j):
+        actor_type = self.get_actor_type(self.selected_actor_tag)
         directions = (
             (0, 1),  # down
             (0, -1),  # up
@@ -199,11 +200,21 @@ class HnefataflGame:
             j = start_j + dj
 
             while self.is_inside_board(i, j):
-                if config.OCCUPIED_CELLS[i][j] == 0 or (i, j) in config.CORNERS:
+                # Stop if cell is occupied
+                if config.OCCUPIED_CELLS[i][j] == 0:
+                    break
+
+                # Stop if cell is a corner and the actor is not the King
+                if (i, j) in config.CORNERS and actor_type != "king":
                     break
 
                 self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}_{j}", 50)
                 move_cells.add((i, j))
+                
+                # If the king enters a corner, he can't go past it (though it's usually at the edge anyway)
+                if (i, j) in config.CORNERS:
+                    break
+                    
                 i += di
                 j += dj
 
