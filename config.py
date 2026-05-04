@@ -32,7 +32,7 @@ def attacker_positions():
     attackers = {}
 
     # Top and bottom rows (near edges)
-    for i in range(3, 6):  # middle three columns
+    for i in range(2, 7):  # middle three columns
         attackers[(i, 0)] = cell(i, 0)
         attackers[(i, 8)] = cell(i, 8)
         if i == 4:
@@ -40,7 +40,7 @@ def attacker_positions():
             attackers[(i, 7)] = cell(i, 7)
 
     # Left and right columns (near edges)
-    for j in range(3, 6):  # middle three rows
+    for j in range(2, 7):  # middle three rows
         attackers[(0, j)] = cell(0, j)
         attackers[(8, j)] = cell(8, j)
         if j == 4:
@@ -56,6 +56,10 @@ def defender_positions():
             continue
         defenders[(i, 4)] = cell(i, 4)
         defenders[(4, i)] = cell(4, i)
+    defenders[(3, 3)] = cell(3, 3)
+    defenders[(5, 3)] = cell(5, 3)
+    defenders[(3, 5)] = cell(3, 5)
+    defenders[(5, 5)] = cell(5, 5)
     return defenders
 
 

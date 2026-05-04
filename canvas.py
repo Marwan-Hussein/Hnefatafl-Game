@@ -211,10 +211,17 @@ class HnefataflGame:
 def play_background_music():
     audio_path = os.path.join(config.ASSETS_DIR, "audio", "Nordic-Folk.ogg")
     try:
+        # Load the media as a static source
         music = pyglet.media.load(audio_path, streaming=False)
+
         player = pyglet.media.Player()
-        player.queue(music)
-        player.loop = True
+
+        # FIX: Wrap the source in a SourceGroup to ensure it loops
+        loop = pyglet.media.SourceGroup(music.audio_format, None)
+        loop.loop = True
+        loop.queue(music)
+
+        player.queue(loop)
         player.play()
         return player
     except Exception as e:
