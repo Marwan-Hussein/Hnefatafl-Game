@@ -1,6 +1,13 @@
 import tkinter as tk
+import config
 from PIL import Image, ImageTk
+from playsound import playsound
 import os
+import threading
+
+
+def play_background_music():
+    playsound(os.path.join(config.CURRENT_DIR, "assets", "audio", "Nordic-Folk.ogg"))
 
 
 def main():
@@ -9,16 +16,16 @@ def main():
     root.title("Hnefatafl Game")
 
     # used dimensions
-    BOARD_SIZE = 1024
-    DISPLAY_WIDTH = 1820  # approximatly = 1024 * 16/9
-    DISPLAY_HEIGHT = 1024
-    ACTOR_SIZE = 89
-    root.geometry(f"{DISPLAY_WIDTH}x{DISPLAY_HEIGHT}")
+    screen_w = root.winfo_screenwidth()  # approximatly = 1024 * 16/9
+    screen_h = root.winfo_screenheight()
+
+    fit_size = min(screen_w, screen_h)
+    scale = config.BOARD_SIZE / fit_size
+    root.geometry(f"{screen_w}x{screen_h}")
 
     # used paths
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    icon_path = os.path.join(current_dir, "assets", "icon.ico")
-    board_path = os.path.join(current_dir, "assets", "GameBoard.png")
+    icon_path = os.path.join(config.CURRENT_DIR, "assets", "icon.ico")
+    board_path = os.path.join(config.CURRENT_DIR, "assets", "GameBoard.png")
 
     # verfy file exists to avoid crashes
     if not os.path.exists(board_path):
@@ -31,8 +38,8 @@ def main():
     # create the canvas
     canvas = tk.Canvas(
         root,
-        width=DISPLAY_WIDTH,
-        height=DISPLAY_HEIGHT,
+        width=screen_w,
+        height=screen_h,
         highlightthickness=0,
         bg="#F5EDDA",
     )  # to be with screen's width
@@ -41,16 +48,20 @@ def main():
     # load the png file (GameBoard)
     try:
         board_img = Image.open(board_path).resize(
-            (BOARD_SIZE, BOARD_SIZE), Image.LANCZOS
+            (int(config.BOARD_SIZE / scale), int(config.BOARD_SIZE / scale)),
+            Image.LANCZOS,
         )
 
         # Convert to be as Tkinter Image
         main_board = ImageTk.PhotoImage(board_img)
 
         # place the image to be centered
+
+        root.update_idletasks()
+        titlebar_h = root.winfo_rooty() - root.winfo_y()
         canvas.create_image(
-            canvas_width // 2,
-            canvas_height // 2,
+            screen_w // 2,
+            screen_h // 2 - titlebar_h // 2,
             image=main_board,
             anchor=tk.CENTER,
             tags="board",
@@ -62,6 +73,7 @@ def main():
     except Exception as e:
         print(f"Faild to load PNG: {e}")
 
+    threading.Thread(target=play_background_music, daemon=True).start()
     root.mainloop()
 
 
