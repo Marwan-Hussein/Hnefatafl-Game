@@ -105,7 +105,7 @@ class HnefataflGame:
             j = start_j + dj
 
             while self.is_inside_board(i, j):
-                if config.OCCUPIED_CELLS[i][j] == 0:
+                if config.OCCUPIED_CELLS[i][j] == 0 or (i, j) in config.CORNERS:
                     break
 
                 self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}_{j}", 50)
@@ -239,3 +239,6 @@ def main():
         update_audio()
 
     root.mainloop()
+
+
+main()

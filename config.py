@@ -68,9 +68,9 @@ DEFENDER_POSITIONS = defender_positions()
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 CORNERS = {
     (0, 0): cell(0, 0),
-    (0, 7): cell(0, 7),
-    (7, 0): cell(7, 0),
-    (7, 7): cell(7, 7),
+    (0, 8): cell(0, 8),
+    (8, 0): cell(8, 0),
+    (8, 8): cell(8, 8),
 }
 
 # only for actors -> consider corners in validations or winning
