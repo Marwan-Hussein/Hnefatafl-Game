@@ -43,9 +43,17 @@ class HnefataflGame:
             bg="#F5EDDA",
         )
         self.canvas.pack(fill="both", expand=True)
+        self.canvas.bind("<Button-1>", self.on_board_click)
 
-    # Calculates which cell (i, j) was clicked
+    """ Calculates which cell (i, j) was clicked """
+
     def on_board_click(self, event):
+        # delete all existing dots if there is
+        for tag in list(self.images.keys()):
+            if tag.startswith("dot_"):
+                self.canvas.delete(tag)
+                del self.images[tag]
+
         # 1. Get board display size and offsets
         display_board_size = config.BOARD_SIZE / self.scale
         offset_x = (self.screen_w - display_board_size) / 2
@@ -61,40 +69,43 @@ class HnefataflGame:
             relative_x = (event.x - offset_x) * self.scale
             relative_y = (event.y - offset_y) * self.scale
 
+            # taking care about the internal offset
+            grid_x = relative_x - config.internal_offset
+            grid_y = relative_y - config.internal_offset
+
             # 4. Convert coordinates to Grid Index (i, j)
             # We divide by CELL_SIZE (93)
-            col = int(relative_x // config.CELL_SIZE)
-            row = int(relative_y // config.CELL_SIZE)
+            col = int(grid_x // config.CELL_SIZE)
+            row = int(grid_y // config.CELL_SIZE)
 
-            print(f"Clicked Cell: ({col}, {row})")
+            print(f"Clicked Cell: ({row}, {col})")
 
             # Optional: Visual feedback (highlighting the cell)
-            self.highlight_cell(col, row)
+            self.highlight_cell(row, col)
 
             # printing dots in avaialable positions
-            i = row + 1  # to down
-            j = col
+            i, j = col, row + 1  # to down
             while (i, j) not in config.OCCUPIED_CELLS and i < 8:
                 self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}{j}", 50)
                 i = i + 1
 
-            i = row - 1  # to up
+            j = row - 1  # to up
             while (i, j) not in config.OCCUPIED_CELLS and i >= 0:
                 self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}{j}", 50)
                 i = i - 1
 
-            i = row
-            j = col + 1  # right
+            i, j = col + 1, row  # right
             while (i, j) not in config.OCCUPIED_CELLS and j < 8:
                 self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}{j}", 50)
                 j = j + 1
 
-            j = col - 1
+            i = col - 1
             while (i, j) not in config.OCCUPIED_CELLS and j >= 0:
                 self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}{j}", 50)
                 j = j - 1
 
-    # Draws a temporary rectangle to show selection
+    """ Draws a temporary rectangle to show selection"""
+
     def highlight_cell(self, i, j):
         self.canvas.delete("highlight")  # Clear previous highlight
 

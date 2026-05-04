@@ -2,12 +2,12 @@ import itertools
 import os
 
 CELL_SIZE = 84
+internal_offset = 175
 
 
 #   ========    HELPERS     ==========
 def cell(i, j):
-    start_poistion = 175
-    return (i * CELL_SIZE + 2 + start_poistion, j * CELL_SIZE + start_poistion - 20)
+    return (i * CELL_SIZE + 2 + internal_offset, j * CELL_SIZE + internal_offset - 20)
 
 
 def positions():
@@ -72,6 +72,5 @@ CORNERS = {
     (7, 7): cell(7, 7),
 }
 
-OCCUPIED_CELLS = (
-    {(4, 4): KING_POSITION} | DEFENDER_POSITIONS | ATTACKERS_POSITIONS | CORNERS
-)
+# only for actors -> consider corners in validations or winning
+OCCUPIED_CELLS = {(4, 4): KING_POSITION} | DEFENDER_POSITIONS | ATTACKERS_POSITIONS
