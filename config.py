@@ -134,6 +134,7 @@ def process_game_step(last_move):
     last_move: (start_i, start_j, end_i, end_j)
     Returns: (winner, captured_cells)
     """
+    global KING_CELL, KING_POSITION
     board = get_game_board()
     state = GameStateProxy(board)
 
@@ -155,7 +156,6 @@ def process_game_step(last_move):
                 # This piece was captured
                 captured_cells.append((r, c))
                 if (r, c) == KING_CELL:
-                    global KING_CELL, KING_POSITION
                     KING_CELL = None
                     KING_POSITION = None
                 elif (r, c) in ATTACKERS_POSITIONS:
