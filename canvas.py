@@ -10,10 +10,15 @@ from reportlab.graphics import renderPM
 
 
 class HnefataflGame:
-    def __init__(self, root):
+    def __init__(self, root, settings=None):
         self.root = root
+        self.settings = settings
         self.canvas = None
         self.images = {}  # Store references to prevent garbage collection
+
+        # Turn logic
+        self.current_turn_team = "attacker"  # Attackers usually start
+        self.turn_label = None
 
         # Calculate scaling
         self.screen_w = root.winfo_screenwidth()
@@ -31,6 +36,7 @@ class HnefataflGame:
         self.setup_ui()
         self.draw_board()
         self.set_actors()
+        self.update_turn_display()
 
     # Initializes the canvas and basic window properties.
     def setup_ui(self):
@@ -41,6 +47,17 @@ class HnefataflGame:
         if os.path.exists(icon_path):
             self.root.iconbitmap(icon_path)
 
+        # Turn Indicator Label
+        self.turn_label = tk.Label(
+            self.root,
+            text="",
+            font=("Georgia", 24, "bold"),
+            bg="#F5EDDA",
+            fg="#2F4F4F",
+            pady=10
+        )
+        self.turn_label.pack(side="top", fill="x")
+
         self.canvas = tk.Canvas(
             self.root,
             width=self.screen_w,
@@ -50,6 +67,36 @@ class HnefataflGame:
         )
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind("<Button-1>", self.on_board_click)
+
+    def update_turn_display(self):
+        team = self.current_turn_team
+        display_text = ""
+
+        if not self.settings:
+            display_text = f"{team.capitalize()}'s Turn"
+        else:
+            mode = self.settings.get("mode")
+            player_side = self.settings.get("side")
+
+            if mode == "HvH":
+                if team == player_side:
+                    display_text = "Player 1's Turn"
+                else:
+                    display_text = "Player 2's Turn"
+            elif mode == "HvC":
+                if team == player_side:
+                    display_text = "Actor's Turn"
+                else:
+                    display_text = "Computer's Turn"
+            else:
+                display_text = f"{team.capitalize()}'s Turn"
+
+        self.turn_label.config(text=display_text)
+        # Update color based on team
+        if team == "attacker":
+            self.turn_label.config(fg="#8B0000") # Dark Red for attackers
+        else:
+            self.turn_label.config(fg="#00008B") # Dark Blue for defenders
 
     """delete all existing dots if there is"""
 
@@ -112,7 +159,15 @@ class HnefataflGame:
         if config.OCCUPIED_CELLS[i][j] == 0:
             actor_tag = self.cell_actors.get(clicked_cell)
             if actor_tag:
-                self.select_actor(actor_tag, clicked_cell)
+                # Check if it's the correct turn's piece
+                actor_type = self.get_actor_type(actor_tag)
+                # King is always on the defender team
+                team = "defender" if (actor_type == "defender" or actor_type == "king") else "attacker"
+                
+                if team == self.current_turn_team:
+                    self.select_actor(actor_tag, clicked_cell)
+                else:
+                    print(f"It's {self.current_turn_team}'s turn!")
 
     def is_inside_board(self, i, j):
         return 0 <= i < config.BOARD_CELLS and 0 <= j < config.BOARD_CELLS
@@ -179,6 +234,10 @@ class HnefataflGame:
 
         print(f"Moved {actor_tag}: {old_cell} -> {new_cell}")
         self.clear_selection()
+        
+        # Switch turns
+        self.current_turn_team = "defender" if self.current_turn_team == "attacker" else "attacker"
+        self.update_turn_display()
 
     def get_actor_type(self, actor_tag):
         if actor_tag == "king":

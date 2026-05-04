@@ -136,8 +136,8 @@ class HnefataflHome:
         # Transition to game
         self.main_frame.destroy()
         
-        # Initialize Game in the root
-        HnefataflGame(self.root)
+        # Initialize Game in the root with settings
+        HnefataflGame(self.root, self.selection_data)
 
     def play_music(self):
         audio_path = os.path.join(config.ASSETS_DIR, "audio", "Nordic-Folk.ogg")
