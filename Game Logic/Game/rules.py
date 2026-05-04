@@ -67,9 +67,9 @@ def capture_if_flanked(state, mover_piece, enemy_r, enemy_c, dr, dc):
 
     # Capture is valid if the far side is:
     # - a friendly piece (but king does NOT count as friendly for capturing)
-    # - the throne
-    # - a corner
-    if is_special_square(br, bc) or is_friendly_piece(behind_piece, mover_piece):
+    # - an empty throne
+    # - an empty corner
+    if (is_special_square(br, bc) and board[br][bc] == EMPTY) or is_friendly_piece(behind_piece, mover_piece):
         board[enemy_r][enemy_c] = EMPTY
 
 
