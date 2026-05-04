@@ -6,6 +6,8 @@ from PIL import Image, ImageTk
 import pyglet
 from canvas import HnefataflGame
 
+back_ground_color = "#F5EDDA"
+dark_red = "#860F0F"
 class HnefataflHome:
     def __init__(self, root):
         self.root = root
@@ -15,9 +17,9 @@ class HnefataflHome:
         self.screen_w = root.winfo_screenwidth()
         self.screen_h = root.winfo_screenheight()
         self.root.geometry(f"{self.screen_w}x{self.screen_h}")
-        self.root.configure(bg="#1a1a1a") # Dark background for menu
+        self.root.configure(bg=back_ground_color) # Dark background for menu
 
-        self.main_frame = tk.Frame(self.root, bg="#1a1a1a")
+        self.main_frame = tk.Frame(self.root, bg=back_ground_color)
         self.main_frame.pack(fill="both", expand=True)
 
         self.selection_data = {
@@ -35,8 +37,8 @@ class HnefataflHome:
             self.main_frame, 
             text="HNEFATAFL", 
             font=("Georgia", 72, "bold"), 
-            fg="#D4AF37", 
-            bg="#1a1a1a",
+            fg="#C1A031", 
+            bg=back_ground_color,
             pady=50
         )
         title_label.pack()
@@ -45,13 +47,13 @@ class HnefataflHome:
             self.main_frame, 
             text="The Ancient Nordic Board Game", 
             font=("Georgia", 24, "italic"), 
-            fg="#F5EDDA", 
-            bg="#1a1a1a",
+            fg= dark_red, 
+            bg=back_ground_color,
             pady=20
         )
         subtitle_label.pack()
 
-        self.menu_container = tk.Frame(self.main_frame, bg="#1a1a1a")
+        self.menu_container = tk.Frame(self.main_frame, bg=back_ground_color)
         self.menu_container.pack(pady=30)
 
         self.show_main_menu()
@@ -62,10 +64,10 @@ class HnefataflHome:
             text=text,
             command=command,
             font=("Georgia", 16, "bold"),
-            bg="#2F4F4F",
-            fg="#F5EDDA",
-            activebackground="#55D7C8",
-            activeforeground="#1a1a1a",
+            bg= dark_red,
+            fg=back_ground_color,
+            activebackground="#B11616",
+            activeforeground=back_ground_color,
             width=width,
             height=2,
             bd=0,
@@ -92,7 +94,7 @@ class HnefataflHome:
     def show_difficulty_selection(self):
         self.clear_menu()
         
-        label = tk.Label(self.menu_container, text="Select Difficulty", font=("Georgia", 18), fg="#F5EDDA", bg="#1a1a1a", pady=10)
+        label = tk.Label(self.menu_container, text="Select Difficulty", font=("Georgia", 18), fg=back_ground_color, bg=back_ground_color, pady=10)
         label.pack()
 
         difficulties = ["Easy", "Medium", "Hard"]
@@ -112,7 +114,7 @@ class HnefataflHome:
         self.clear_menu()
         
         mode_text = "Player 1: Select Side" if self.selection_data["mode"] == "HvH" else "Select Your Side"
-        label = tk.Label(self.menu_container, text=mode_text, font=("Georgia", 18), fg="#F5EDDA", bg="#1a1a1a", pady=10)
+        label = tk.Label(self.menu_container, text=mode_text, font=("Georgia", 18), fg=back_ground_color, bg=back_ground_color, pady=10)
         label.pack()
 
         btn_attacker = self.create_button(self.menu_container, "Attacker", lambda: self.start_game("attacker"))

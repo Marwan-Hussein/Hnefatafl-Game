@@ -54,9 +54,9 @@ class HnefataflGame:
             font=("Georgia", 24, "bold"),
             bg="#F5EDDA",
             fg="#2F4F4F",
-            pady=10
+            pady=10,
         )
-        self.turn_label.pack(side="top", fill="x")
+        self.turn_label.pack(side="bottom", fill="x")
 
         self.canvas = tk.Canvas(
             self.root,
@@ -80,9 +80,9 @@ class HnefataflGame:
 
             if mode == "HvH":
                 if team == player_side:
-                    display_text = "Player 1's Turn"
+                    display_text = f"Player 1's Turn [{team.capitalize()}]"
                 else:
-                    display_text = "Player 2's Turn"
+                    display_text = f"Player 2's Turn [{team.capitalize()}]"
             elif mode == "HvC":
                 if team == player_side:
                     display_text = "Actor's Turn"
@@ -94,9 +94,9 @@ class HnefataflGame:
         self.turn_label.config(text=display_text)
         # Update color based on team
         if team == "attacker":
-            self.turn_label.config(fg="#8B0000") # Dark Red for attackers
+            self.turn_label.config(fg="#8B0000")  # Dark Red for attackers
         else:
-            self.turn_label.config(fg="#00008B") # Dark Blue for defenders
+            self.turn_label.config(fg="#00008B")  # Dark Blue for defenders
 
     """delete all existing dots if there is"""
 
@@ -162,8 +162,12 @@ class HnefataflGame:
                 # Check if it's the correct turn's piece
                 actor_type = self.get_actor_type(actor_tag)
                 # King is always on the defender team
-                team = "defender" if (actor_type == "defender" or actor_type == "king") else "attacker"
-                
+                team = (
+                    "defender"
+                    if (actor_type == "defender" or actor_type == "king")
+                    else "attacker"
+                )
+
                 if team == self.current_turn_team:
                     self.select_actor(actor_tag, clicked_cell)
                 else:
@@ -234,9 +238,11 @@ class HnefataflGame:
 
         print(f"Moved {actor_tag}: {old_cell} -> {new_cell}")
         self.clear_selection()
-        
+
         # Switch turns
-        self.current_turn_team = "defender" if self.current_turn_team == "attacker" else "attacker"
+        self.current_turn_team = (
+            "defender" if self.current_turn_team == "attacker" else "attacker"
+        )
         self.update_turn_display()
 
     def get_actor_type(self, actor_tag):
@@ -393,4 +399,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
