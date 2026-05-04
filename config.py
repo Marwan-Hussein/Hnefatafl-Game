@@ -3,6 +3,7 @@ import os
 
 CELL_SIZE = 84
 internal_offset = 175
+BOARD_CELLS = 9
 
 
 #   ========    HELPERS     ==========
@@ -73,4 +74,8 @@ CORNERS = {
 }
 
 # only for actors -> consider corners in validations or winning
-OCCUPIED_CELLS = {(4, 4): KING_POSITION} | DEFENDER_POSITIONS | ATTACKERS_POSITIONS
+INITIAL_ACTOR_CELLS = {(4, 4)} | set(DEFENDER_POSITIONS) | set(ATTACKERS_POSITIONS)
+OCCUPIED_CELLS = [
+    [0 if (i, j) in INITIAL_ACTOR_CELLS else 1 for j in range(BOARD_CELLS)]
+    for i in range(BOARD_CELLS)
+]

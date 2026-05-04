@@ -69,51 +69,60 @@ class HnefataflGame:
             relative_x = (event.x - offset_x) * self.scale
             relative_y = (event.y - offset_y) * self.scale
 
-            # taking care about the internal offset
-            grid_x = relative_x - config.internal_offset
-            grid_y = relative_y - config.internal_offset
+            # taking care about the internal offset used by config.cell()
+            grid_x = relative_x - (config.internal_offset + 2)
+            grid_y = relative_y - (config.internal_offset - 20)
 
             # 4. Convert coordinates to Grid Index (i, j)
-            # We divide by CELL_SIZE (93)
-            col = int(grid_x // config.CELL_SIZE)
-            row = int(grid_y // config.CELL_SIZE)
+            i = int(round(grid_x / config.CELL_SIZE))
+            j = int(round(grid_y / config.CELL_SIZE))
 
-            print(f"Clicked Cell: ({row}, {col})")
+            if not self.is_inside_board(i, j):
+                return
 
-            # Optional: Visual feedback (highlighting the cell)
-            self.highlight_cell(row, col)
+            print(f"Clicked Cell: ({i}, {j})")
 
             # printing dots in avaialable positions
-            i, j = col, row + 1  # to down
-            while (i, j) not in config.OCCUPIED_CELLS and i < 8:
-                self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}{j}", 50)
-                i = i + 1
+            if config.OCCUPIED_CELLS[i][j] == 0:
+                self.highlight_cell(
+                    i, j
+                )  # optional: Visual feedback (highlighting the cell)
+                self.show_available_moves(i, j)
 
-            j = row - 1  # to up
-            while (i, j) not in config.OCCUPIED_CELLS and i >= 0:
-                self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}{j}", 50)
-                i = i - 1
+    def is_inside_board(self, i, j):
+        return 0 <= i < config.BOARD_CELLS and 0 <= j < config.BOARD_CELLS
 
-            i, j = col + 1, row  # right
-            while (i, j) not in config.OCCUPIED_CELLS and j < 8:
-                self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}{j}", 50)
-                j = j + 1
+    def show_available_moves(self, start_i, start_j):
+        directions = (
+            (0, 1),  # down
+            (0, -1),  # up
+            (1, 0),  # right
+            (-1, 0),  # left
+        )
 
-            i = col - 1
-            while (i, j) not in config.OCCUPIED_CELLS and j >= 0:
-                self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}{j}", 50)
-                j = j - 1
+        for di, dj in directions:
+            i = start_i + di
+            j = start_j + dj
+
+            while self.is_inside_board(i, j):
+                if config.OCCUPIED_CELLS[i][j] == 0:
+                    break
+
+                self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}_{j}", 50)
+                i += di
+                j += dj
 
     """ Draws a temporary rectangle to show selection"""
 
     def highlight_cell(self, i, j):
         self.canvas.delete("highlight")  # Clear previous highlight
 
-        x, y = self._get_canvas_coords(config.cell(i, j))
+        x, y = self._get_canvas_coords(config.cell(i + 2, j + 2))
+        x, y = x - config.internal_offset, y - config.internal_offset
         size = config.CELL_SIZE / self.scale
 
         self.canvas.create_rectangle(
-            x, y, x + size, y + size, outline="#D77555", width=3, tags="highlight"
+            x, y, x + size, y + size, outline="#55D7C8", width=3, tags="highlight"
         )
 
     # Loads and centers the game board.
