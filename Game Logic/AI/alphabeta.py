@@ -13,7 +13,8 @@ import math
 import copy
 
 from Game.moves import get_all_moves, apply_move
-from .evaluation import evaluate
+from Game.rules import apply_captures, check_winner
+from AI.evaluation import evaluate
 
 
 def get_opponent(player):
@@ -21,10 +22,12 @@ def get_opponent(player):
 
 
 def minimax(state, depth, alpha, beta, maximizing, player):
-    if depth == 0:
+    #  Check terminal state
+    winner = check_winner(state)
+    if depth == 0 or winner:
         return evaluate(state, player), None
 
-    moves = get_all_moves(state, player)
+    moves = get_all_moves(state, state.turn)
 
     if not moves:
         return evaluate(state, player), None
@@ -36,7 +39,10 @@ def minimax(state, depth, alpha, beta, maximizing, player):
 
         for move in moves:
             new_state = copy.deepcopy(state)
+
             apply_move(new_state, move)
+            apply_captures(new_state, move)
+            new_state.switch_turn()
 
             eval_score, _ = minimax(
                 new_state,
@@ -44,7 +50,7 @@ def minimax(state, depth, alpha, beta, maximizing, player):
                 alpha,
                 beta,
                 False,
-                get_opponent(player)
+                player
             )
 
             if eval_score > max_eval:
@@ -62,7 +68,10 @@ def minimax(state, depth, alpha, beta, maximizing, player):
 
         for move in moves:
             new_state = copy.deepcopy(state)
+
             apply_move(new_state, move)
+            apply_captures(new_state, move)
+            new_state.switch_turn()
 
             eval_score, _ = minimax(
                 new_state,
@@ -70,7 +79,7 @@ def minimax(state, depth, alpha, beta, maximizing, player):
                 alpha,
                 beta,
                 True,
-                get_opponent(player)
+                player
             )
 
             if eval_score < min_eval:
@@ -85,7 +94,7 @@ def minimax(state, depth, alpha, beta, maximizing, player):
 
 
 def get_best_move(state, player, level):
-    from .difficulty import get_depth
+    from AI.difficulty import get_depth
 
     depth = get_depth(level)
 
