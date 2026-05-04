@@ -158,6 +158,15 @@ def run_game():
     while True:
         print(f"\nTurn: {state.turn}")
 
+        # Check if current player has any legal moves
+        legal_moves = get_all_moves(state, state.turn)
+        if not legal_moves:
+            # Current player has no moves, opponent wins
+            opponent = "defender" if state.turn == "attacker" else "attacker"
+            print(f"\nNo moves available for {state.turn}!")
+            print(f"Game Over: {opponent} (opponent wins)")
+            break
+
         # Get move
         if mode == "1":
             move = get_human_move(state)
@@ -169,13 +178,12 @@ def run_game():
                 if move is not None:
                     print("AI Move:", move_to_text(move))
 
-        # No available move
+        # No available move (should not happen after check above, but keep as safety)
         if move is None:
             print("No moves available!")
             break
 
         # Safety check: make sure move is legal
-        legal_moves = get_all_moves(state, state.turn)
         if move not in legal_moves:
             print("Illegal move! Try again.")
             continue

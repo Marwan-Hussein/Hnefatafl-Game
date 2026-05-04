@@ -52,10 +52,7 @@ def get_piece_moves(state, row, col):
             if piece != KING and is_special_square(r, c):
                 break
 
-            # block only if the square is between two ENEMY pieces
-            if is_sandwich(board, r, c, piece):
-                break
-
+            # Allow moves into sandwich positions - piece will be captured after moving
             moves.append((row, col, r, c))
             r += dr
             c += dc
