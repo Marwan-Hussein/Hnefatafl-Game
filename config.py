@@ -67,6 +67,7 @@ def defender_positions():
 BOARD_SIZE = 1024
 ACTOR_SIZE = 75
 AVAILABLE_BOARD_POSITIONS, KING_POSITION = positions()
+KING_CELL = (4, 4)
 ATTACKERS_POSITIONS = attacker_positions()
 DEFENDER_POSITIONS = defender_positions()
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
@@ -78,8 +79,35 @@ CORNERS = {
 }
 
 # only for actors -> consider corners in validations or winning
-INITIAL_ACTOR_CELLS = {(4, 4)} | set(DEFENDER_POSITIONS) | set(ATTACKERS_POSITIONS)
-OCCUPIED_CELLS = [
-    [0 if (i, j) in INITIAL_ACTOR_CELLS else 1 for j in range(BOARD_CELLS)]
-    for i in range(BOARD_CELLS)
-]
+INITIAL_ACTOR_CELLS = set()
+OCCUPIED_CELLS = []
+
+
+def rebuild_occupied_cells():
+    global INITIAL_ACTOR_CELLS, OCCUPIED_CELLS
+    INITIAL_ACTOR_CELLS = {KING_CELL} | set(DEFENDER_POSITIONS) | set(
+        ATTACKERS_POSITIONS
+    )
+    OCCUPIED_CELLS = [
+        [0 if (i, j) in INITIAL_ACTOR_CELLS else 1 for j in range(BOARD_CELLS)]
+        for i in range(BOARD_CELLS)
+    ]
+
+
+def update_actor_position(actor_type, old_cell, new_cell):
+    global KING_CELL, KING_POSITION
+
+    if actor_type == "king":
+        KING_CELL = new_cell
+        KING_POSITION = cell(*new_cell)
+    elif actor_type == "defender":
+        DEFENDER_POSITIONS.pop(old_cell, None)
+        DEFENDER_POSITIONS[new_cell] = cell(*new_cell)
+    elif actor_type == "attacker":
+        ATTACKERS_POSITIONS.pop(old_cell, None)
+        ATTACKERS_POSITIONS[new_cell] = cell(*new_cell)
+
+    rebuild_occupied_cells()
+
+
+rebuild_occupied_cells()
