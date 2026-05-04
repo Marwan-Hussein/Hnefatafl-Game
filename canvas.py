@@ -8,6 +8,10 @@ import os
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 
+attacker_color = "#1C1D17"
+defender_color = "#BDA160"
+dark_red = "#860F0F"
+
 
 class HnefataflGame:
     def __init__(self, root, settings=None):
@@ -95,9 +99,9 @@ class HnefataflGame:
         self.turn_label.config(text=display_text)
         # Update color based on team
         if team == "attacker":
-            self.turn_label.config(fg="#8B0000")  # Dark Red for attackers
+            self.turn_label.config(fg=attacker_color)  # Dark Red for attackers
         else:
-            self.turn_label.config(fg="#00008B")  # Dark Blue for defenders
+            self.turn_label.config(fg=defender_color)  # Dark Blue for defenders
 
     """delete all existing dots if there is"""
 
@@ -271,15 +275,17 @@ class HnefataflGame:
     def display_winner(self, team):
         # PLAYER' WIN [{team.capitalize()}]
         text = f"PLAYER' WIN [{team.capitalize()}]"
+        bg_color = attacker_color if team.capitalize() == "ATTACKER" else defender_color
         self.canvas.create_text(
             self.screen_w // 2,
             self.screen_h // 2,
             text=text,
             font=("Georgia", 48, "bold"),
-            fill="#860F0F",
-            tags="winner_msg"
+            fill=dark_red,
+            bg=bg_color,
+            tags="winner_msg",
         )
-        self.turn_label.config(text=text, fg="#860F0F")
+        self.turn_label.config(text=text, fg=dark_red)
 
     def get_actor_type(self, actor_tag):
         if actor_tag == "king":
