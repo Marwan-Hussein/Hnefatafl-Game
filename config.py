@@ -64,4 +64,14 @@ ACTOR_SIZE = 75
 AVAILABLE_BOARD_POSITIONS, KING_POSITION = positions()
 ATTACKERS_POSITIONS = attacker_positions()
 DEFENDER_POSITIONS = defender_positions()
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+CORNERS = {
+    (0, 0): cell(0, 0),
+    (0, 7): cell(0, 7),
+    (7, 0): cell(7, 0),
+    (7, 7): cell(7, 7),
+}
+
+OCCUPIED_CELLS = (
+    {(4, 4): KING_POSITION} | DEFENDER_POSITIONS | ATTACKERS_POSITIONS | CORNERS
+)
