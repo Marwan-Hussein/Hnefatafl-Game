@@ -16,10 +16,6 @@ def check_winner(state):
     board = state.board
     king_pos = find_king(board)
 
-    # King removed -> attackers win
-    if king_pos is None:
-        return "attacker"
-
     kr, kc = king_pos
 
     # King reaches a corner -> defenders win
