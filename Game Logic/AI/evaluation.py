@@ -12,93 +12,158 @@
 # - assign a numeric score to any board state
 # - used by alpha-beta pruning to choose best move
 # ai/evaluation.py
+"""
+ai/evaluation.py
+
+Board scoring / utility function for Hnefatafl (9x9).
+Returns a numeric score from the perspective of `player`.
+  positive  ->  good for `player`
+  negative  ->  bad  for `player`
+
+Heuristics used:
+  1. Terminal detection  – immediate win / loss = ±infinity
+  2. Material advantage  – attacker count vs defender count
+  3. King safety         – distance of king to nearest corner
+  4. King mobility       – number of open squares the king can reach
+  5. Attacker encirclement – how many of the king's 4 sides are threatened
+  6. Positional advantage – defenders near the king (escort bonus)
+"""
 
 from Game.constants import (
-    BOARD_SIZE, ATTACKER, DEFENDER, KING, CORNERS
+    BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING,
+    THRONE, CORNERS, in_bounds
 )
-from Game.rules import check_winner
+from Game.rules import check_winner, find_king
 
-MATERIAL_WEIGHT = 2
-KING_DISTANCE_WEIGHT = 6
-MOBILITY_WEIGHT = 1.5
-WIN_WEIGHT = 10000
+# ── tuneable weights ───────────────────────────────────────────────────────────
+W_MATERIAL_ATTACKER  =  10   # score per attacker piece still on board
+W_MATERIAL_DEFENDER  =  12   # score per defender piece still on board
+W_KING_DISTANCE      =  8    # reward for king being close to a corner  (defender)
+W_KING_MOBILITY      =  5    # reward per open square around the king   (defender)
+W_ENCIRCLEMENT       =  15   # how many attackers surround king
+W_ESCORT             =  6    # reward per defender adjacent to king     (defender)
+
+INF = 10_000
 
 
-def manhattan_distance(r1, c1, r2, c2):
-    return abs(r1 - r2) + abs(c1 - c2)
+# ── helpers ───────────────────────────────────────────────────────────────────
 
-
-def find_king(board):
+def _count_pieces(board):
+    """Return (num_attackers, num_defenders) on the board."""
+    attackers = defenders = 0
     for r in range(BOARD_SIZE):
         for c in range(BOARD_SIZE):
-            if board[r][c] == KING:
-                return (r, c)
-    return None
-
-
-def material_score(board):
-    attackers = 0
-    defenders = 0
-
-    for row in board:
-        for cell in row:
-            if cell == ATTACKER:
+            p = board[r][c]
+            if p == ATTACKER:
                 attackers += 1
-            elif cell == DEFENDER:
+            elif p == DEFENDER:
                 defenders += 1
+    return attackers, defenders
 
-    return defenders - attackers
+
+def _min_corner_distance(kr, kc):
+    """Manhattan distance from king to the nearest corner."""
+    return min(abs(kr - cr) + abs(kc - cc) for cr, cc in CORNERS)
 
 
-def king_distance_score(board):
+def _king_adjacency(board, kr, kc):
+    """
+    Return (attacker_neighbours, defender_neighbours, open_neighbours).
+    Only the four orthogonal directions matter.
+    """
+    att = def_ = open_ = 0
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        nr, nc = kr + dr, kc + dc
+        if not in_bounds(nr, nc):
+            continue
+        p = board[nr][nc]
+        if p == ATTACKER:
+            att += 1
+        elif p == DEFENDER:
+            def_ += 1
+        elif p == EMPTY:
+            open_ += 1
+    return att, def_, open_
+
+
+def _king_mobility(board, kr, kc):
+    """
+    Count squares the king can actually reach (rook-style, stopping at obstacles).
+    """
+    reachable = 0
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        r, c = kr + dr, kc + dc
+        while in_bounds(r, c) and board[r][c] == EMPTY:
+            reachable += 1
+            r += dr
+            c += dc
+    return reachable
+
+
+# ── main scoring function ─────────────────────────────────────────────────────
+
+def evaluate(state, player):
+    """
+    Evaluate the board from `player`'s perspective.
+    `player` is "attacker" or "defender".
+    Returns a signed integer score.
+    """
+    board = state.board
+
+    # ── 1. terminal check ──────────────────────────────────────────────────────
+    winner = check_winner(state)
+    if winner == player:
+        return INF
+    if winner is not None:
+        return -INF
+
     king_pos = find_king(board)
-
-    if not king_pos:
-        return -WIN_WEIGHT
+    if king_pos is None:
+        return INF if player == "attacker" else -INF
 
     kr, kc = king_pos
 
-    min_dist = min(
-        manhattan_distance(kr, kc, cr, cc)
-        for (cr, cc) in CORNERS
+    # ── 2. material ────────────────────────────────────────────────────────────
+    num_att, num_def = _count_pieces(board)
+
+    # ── 3. king distance to corner ─────────────────────────────────────────────
+    max_dist = 2 * (BOARD_SIZE - 1)
+    dist = _min_corner_distance(kr, kc)
+    king_distance_score = W_KING_DISTANCE * (max_dist - dist)  # high when close to corner
+
+    # ── 4. king mobility ───────────────────────────────────────────────────────
+    mobility = _king_mobility(board, kr, kc)
+    king_mobility_score = W_KING_MOBILITY * mobility
+
+    # ── 5. attacker encirclement & 6. defender escort ─────────────────────────
+    att_adj, def_adj, _ = _king_adjacency(board, kr, kc)
+
+    encirclement_score = W_ENCIRCLEMENT * att_adj
+    escort_score       = W_ESCORT       * def_adj
+
+    # ── defender's perspective ─────────────────────────────────────────────────
+    # wants: king close to corner, mobile, escorted, fewer attackers alive
+    defender_score = (
+        king_distance_score
+        + king_mobility_score
+        - encirclement_score           # bad when attackers surround king
+        + escort_score
+        + W_MATERIAL_DEFENDER * num_def
+        - W_MATERIAL_ATTACKER * num_att
     )
 
-    return -min_dist
+    # ── attacker's perspective ─────────────────────────────────────────────────
+    # wants: king far from corner, surrounded, fewer defenders alive
+    attacker_score = (
+        - king_distance_score
+        - king_mobility_score
+        + encirclement_score
+        - escort_score
+        + W_MATERIAL_ATTACKER * num_att
+        - W_MATERIAL_DEFENDER * num_def
+    )
 
-
-def mobility_score(state, player):
-    from Game.moves import get_all_moves
-    return len(get_all_moves(state, player))
-
-
-def evaluate(state, player):
-    board = state.board
-
-    #  Check win/lose first
-    winner = check_winner(state)
-    if winner == "defender":
-        return WIN_WEIGHT if player == "defender" else -WIN_WEIGHT
-    elif winner == "attacker":
-        return WIN_WEIGHT if player == "attacker" else -WIN_WEIGHT
-
-    # Material
-    material = material_score(board) * MATERIAL_WEIGHT
-
-    # King safety
-    king_dist = king_distance_score(board) * KING_DISTANCE_WEIGHT
-
-    # Mobility
     if player == "attacker":
-        mobility = mobility_score(state, "attacker") - mobility_score(state, "defender")
+        return attacker_score
     else:
-        mobility = mobility_score(state, "defender") - mobility_score(state, "attacker")
-
-    mobility *= MOBILITY_WEIGHT
-
-    score = material + king_dist + mobility
-
-    #  flip perspective
-    if player == "attacker":
-        score = -score
-
-    return score
+        return defender_score
