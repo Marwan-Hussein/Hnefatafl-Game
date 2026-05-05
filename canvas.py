@@ -3,10 +3,10 @@ import config
 from PIL import Image, ImageTk
 import cairosvg
 import io
-import pyglet
 import os
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
+from audio_player import *
 from game_logic.Game.constants import ATTACKER, DEFENDER, EMPTY, KING
 from game_logic.Game.moves import apply_move, get_all_moves, get_piece_moves
 from game_logic.Game.rules import apply_captures, check_winner
@@ -161,6 +161,8 @@ class HnefataflGame:
         if clicked_cell is None:
             return
 
+        play_effect(EFFECT["click"])
+
         i, j = clicked_cell
         print(f"Clicked Cell: ({j}, {i})")
 
@@ -278,7 +280,9 @@ class HnefataflGame:
         return None
 
     def is_ai_turn(self):
-        return self.is_human_vs_computer() and self.game_state.turn == self.get_ai_side()
+        return (
+            self.is_human_vs_computer() and self.game_state.turn == self.get_ai_side()
+        )
 
     def maybe_schedule_ai_turn(self):
         if self.game_over or self.ai_turn_pending or not self.is_ai_turn():
@@ -338,6 +342,9 @@ class HnefataflGame:
                 if tag in self.actor_cells:
                     del self.actor_cells[tag]
 
+        if captured_cells:
+            play_effect(EFFECT["kill"])
+
         winner = check_winner(self.game_state)
         if winner:
             self.end_game(winner)
@@ -374,6 +381,10 @@ class HnefataflGame:
     def end_game(self, winner):
         self.game_over = True
         self.clear_selection()
+        if self.is_human_vs_computer() and winner == self.get_ai_side():
+            play_effect(EFFECT["loser"])
+        else:
+            play_effect(EFFECT["winner"])
         self.display_winner(winner)
         if self.on_game_end:
             self.root.after(2500, self.on_game_end)
@@ -546,26 +557,6 @@ class HnefataflGame:
                 self.cell_actors[gui_cell] = tag
 
 
-def play_background_music():
-    audio_path = os.path.join(config.ASSETS_DIR, "audio", "Nordic-Folk.ogg")
-    try:
-        music = pyglet.media.load(audio_path, streaming=False)
-        player = pyglet.media.Player()
-        player.queue(music)
-        player.loop = True
-
-        @player.event
-        def on_eos():
-            player.seek(0)
-            player.play()
-
-        player.play()
-        return player
-    except Exception as e:
-        print(f"Audio Error: {e}")
-        return None
-
-
 def main():
     root = tk.Tk()
 
@@ -573,14 +564,7 @@ def main():
     game = HnefataflGame(root)
 
     # Audio Setup
-    player = play_background_music()
-
-    def update_audio():
-        pyglet.clock.tick()
-        root.after(10, update_audio)
-
-    if player:
-        update_audio()
+    play_background_music()
 
     root.mainloop()
 

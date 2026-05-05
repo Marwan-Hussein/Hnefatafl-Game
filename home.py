@@ -3,9 +3,8 @@ from tkinter import messagebox
 import os
 import config
 from PIL import Image, ImageTk
-import pyglet
 from canvas import HnefataflGame
-from audio_player import *
+from audio_player import play_background_music, play_click_effect, stop_background_music
 
 back_ground_color = "#F5EDDA"
 dark_red = "#860F0F"
@@ -16,8 +15,6 @@ class HnefataflHome:
         self.root = root
         self.root.title("Hnefatafl - The Viking Game")
         self.current_game = None
-        self.player = None
-        self.audio_loop_running = False
         self.root.protocol("WM_DELETE_WINDOW", self.handle_app_close)
 
         # Calculate scaling (same as canvas)]
@@ -36,7 +33,6 @@ class HnefataflHome:
         }
 
         self.setup_ui()
-        # self.play_music()
         play_background_music()
 
     def setup_ui(self):
@@ -67,10 +63,14 @@ class HnefataflHome:
         self.show_main_menu()
 
     def create_button(self, parent, text, command, width=25):
+        def command_with_sound():
+            play_click_effect()
+            command()
+
         return tk.Button(
             parent,
             text=text,
-            command=command,
+            command=command_with_sound,
             font=("Georgia", 16, "bold"),
             bg=dark_red,
             fg=back_ground_color,
@@ -200,49 +200,8 @@ class HnefataflHome:
         self.main_frame.pack(fill="both", expand=True)
         self.setup_ui()
 
-    def play_music(self):
-        if self.player is not None:
-            return
-
-        audio_path = os.path.join(config.ASSETS_DIR, "audio", "Nordic-Folk.ogg")
-        try:
-            music = pyglet.media.load(audio_path, streaming=False)
-            self.player = pyglet.media.Player()
-            self.player.queue(music)
-
-            @self.player.event
-            def on_eos():
-                self.player.seek(0)
-                self.player.play()
-
-            self.player.play()
-            self.start_audio_loop()
-        except Exception as e:
-            print(f"Audio Error: {e}")
-
-    def start_audio_loop(self):
-        if self.audio_loop_running:
-            return
-
-        self.audio_loop_running = True
-
-        def update_audio():
-            if not self.audio_loop_running:
-                return
-            pyglet.clock.tick()
-            self.root.after(10, update_audio)
-
-        update_audio()
-
     def stop_music(self):
-        self.audio_loop_running = False
-        if self.player is not None:
-            try:
-                self.player.pause()
-                self.player.delete()
-            except Exception:
-                pass
-            self.player = None
+        stop_background_music()
 
     def handle_app_close(self):
         self.stop_music()
