@@ -311,8 +311,8 @@ class HnefataflGame:
         accent_color = attacker_color if team == "attacker" else defender_color
 
         self.canvas.delete("winner_ui")
-        box_w = 640
-        box_h = 170
+        box_w = int(self.screen_w * 0.75)
+        box_h = 200
         x1 = (self.screen_w - box_w) // 2
         y1 = (self.screen_h - box_h) // 2
         x2 = x1 + box_w
