@@ -8,9 +8,10 @@ import os
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 from game_logic.Game.constants import ATTACKER, DEFENDER, EMPTY, KING
-from game_logic.Game.moves import apply_move, get_piece_moves
+from game_logic.Game.moves import apply_move, get_all_moves, get_piece_moves
 from game_logic.Game.rules import apply_captures, check_winner
 from game_logic.Game.state import GameState
+from game_logic.AI.alphabeta import get_best_move
 
 attacker_color = "#1C1D17"
 defender_color = "#BDA160"
@@ -43,11 +44,13 @@ class HnefataflGame:
         self.actor_cells = {}
         self.cell_actors = {}
         self.game_over = False
+        self.ai_turn_pending = False
 
         self.setup_ui()
         self.draw_board()
         self.set_actors()
         self.update_turn_display()
+        self.root.after(150, self.maybe_schedule_ai_turn)
 
     # Initializes the canvas and basic window properties.
     def setup_ui(self):
@@ -97,7 +100,7 @@ class HnefataflGame:
                     display_text = f"Player 2's Turn [{team.capitalize()}]"
             elif mode == "HvC":
                 if team == player_side:
-                    display_text = "Actor's Turn"
+                    display_text = "Player's Turn"
                 else:
                     display_text = "Computer's Turn"
             else:
@@ -151,7 +154,7 @@ class HnefataflGame:
         return i, j
 
     def on_board_click(self, event):
-        if self.game_over:
+        if self.game_over or self.ai_turn_pending or self.is_ai_turn():
             return
 
         clicked_cell = self.get_clicked_cell(event)
@@ -249,7 +252,6 @@ class HnefataflGame:
 
     def move_selected_actor(self, new_cell):
         old_cell = self.selected_actor_cell
-        actor_tag = self.selected_actor_tag
 
         if old_cell == new_cell or new_cell not in self.available_move_cells:
             return
@@ -257,6 +259,54 @@ class HnefataflGame:
         old_row, old_col = self.gui_to_logic_cell(old_cell)
         new_row, new_col = self.gui_to_logic_cell(new_cell)
         move = (old_row, old_col, new_row, new_col)
+        self.execute_move(move)
+
+    def is_human_vs_computer(self):
+        return bool(self.settings) and self.settings.get("mode") == "HvC"
+
+    def get_human_side(self):
+        if not self.is_human_vs_computer():
+            return None
+        return self.settings.get("side")
+
+    def get_ai_side(self):
+        human_side = self.get_human_side()
+        if human_side == "attacker":
+            return "defender"
+        if human_side == "defender":
+            return "attacker"
+        return None
+
+    def is_ai_turn(self):
+        return self.is_human_vs_computer() and self.game_state.turn == self.get_ai_side()
+
+    def maybe_schedule_ai_turn(self):
+        if self.game_over or self.ai_turn_pending or not self.is_ai_turn():
+            return
+
+        self.ai_turn_pending = True
+        self.root.after(150, self.play_ai_turn)
+
+    def ensure_current_player_can_move(self):
+        legal_moves = get_all_moves(self.game_state, self.game_state.turn)
+        if legal_moves:
+            return True
+
+        winner = "defender" if self.game_state.turn == "attacker" else "attacker"
+        self.end_game(winner)
+        return False
+
+    def execute_move(self, move):
+        old_row, old_col, new_row, new_col = move
+        old_cell = self.logic_to_gui_cell(old_row, old_col)
+        new_cell = self.logic_to_gui_cell(new_row, new_col)
+        actor_tag = self.cell_actors.get(old_cell)
+
+        if actor_tag is None:
+            print(f"No actor found at {old_cell} for move {move}")
+            self.clear_selection()
+            return
+
         previous_board = [row[:] for row in self.game_state.board]
 
         apply_move(self.game_state, move)
@@ -295,7 +345,31 @@ class HnefataflGame:
 
         self.game_state.switch_turn()
         self.current_turn_team = self.game_state.turn
+
+        if not self.ensure_current_player_can_move():
+            return
+
         self.update_turn_display()
+        self.maybe_schedule_ai_turn()
+
+    def play_ai_turn(self):
+        self.ai_turn_pending = False
+
+        if self.game_over or not self.is_ai_turn():
+            return
+
+        if not self.ensure_current_player_can_move():
+            return
+
+        difficulty = (self.settings or {}).get("difficulty", "medium")
+        move = get_best_move(self.game_state, self.game_state.turn, difficulty)
+
+        if move is None:
+            winner = "defender" if self.game_state.turn == "attacker" else "attacker"
+            self.end_game(winner)
+            return
+
+        self.execute_move(move)
 
     def end_game(self, winner):
         self.game_over = True

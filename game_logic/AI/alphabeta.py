@@ -20,10 +20,16 @@ Uses:
   - AI.difficulty : get_depth
 """
 
-from Game.moves    import get_all_moves, apply_move
-from Game.rules    import apply_captures, check_winner
-from AI.evaluation import evaluate, INF
-from AI.difficulty import get_depth
+try:
+    from ..Game.moves import get_all_moves, apply_move
+    from ..Game.rules import apply_captures, check_winner
+    from .evaluation import evaluate, INF
+    from .difficulty import get_depth
+except ImportError:
+    from Game.moves import get_all_moves, apply_move
+    from Game.rules import apply_captures, check_winner
+    from AI.evaluation import evaluate, INF
+    from AI.difficulty import get_depth
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
