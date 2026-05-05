@@ -1,6 +1,12 @@
 import os
 from game_logic.Game import rules
-from game_logic.Game.constants import ATTACKER, DEFENDER, KING, EMPTY, BOARD_SIZE as LOGIC_BOARD_SIZE
+from game_logic.Game.constants import (
+    ATTACKER,
+    DEFENDER,
+    KING,
+    EMPTY,
+    BOARD_SIZE as LOGIC_BOARD_SIZE,
+)
 
 CELL_SIZE = 84
 internal_offset = 175
@@ -72,6 +78,9 @@ KING_CELL = (4, 4)
 ATTACKERS_POSITIONS = attacker_positions()
 DEFENDER_POSITIONS = defender_positions()
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+EFFECTS = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "assets", "audio", "effects"
+)
 CORNERS = {
     (0, 0): cell(0, 0),
     (0, 8): cell(0, 8),

@@ -11,5 +11,5 @@ pip install pyglet
 pip install svglib
 pip install reportlab
 pip install cairosvg
-
+pip install python-vlc
 ```
