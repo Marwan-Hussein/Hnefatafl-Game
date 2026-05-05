@@ -12,6 +12,10 @@ class HnefataflHome:
     def __init__(self, root):
         self.root = root
         self.root.title("Hnefatafl - The Viking Game")
+        self.current_game = None
+        self.player = None
+        self.audio_loop_running = False
+        self.root.protocol("WM_DELETE_WINDOW", self.handle_app_close)
         
         # Calculate scaling (same as canvas)
         self.screen_w = root.winfo_screenwidth()
@@ -139,24 +143,74 @@ class HnefataflHome:
         self.main_frame.destroy()
         
         # Initialize Game in the root with settings
-        HnefataflGame(self.root, self.selection_data)
+        self.current_game = HnefataflGame(
+            self.root,
+            self.selection_data.copy(),
+            on_game_end=self.return_to_home,
+        )
+
+    def return_to_home(self):
+        if self.current_game:
+            self.current_game.destroy_ui()
+            self.current_game = None
+
+        self.selection_data = {
+            "mode": None,
+            "difficulty": None,
+            "side": None
+        }
+
+        self.main_frame = tk.Frame(self.root, bg=back_ground_color)
+        self.main_frame.pack(fill="both", expand=True)
+        self.setup_ui()
 
     def play_music(self):
+        if self.player is not None:
+            return
+
         audio_path = os.path.join(config.ASSETS_DIR, "audio", "Nordic-Folk.ogg")
         try:
             music = pyglet.media.load(audio_path, streaming=False)
             self.player = pyglet.media.Player()
             self.player.queue(music)
-            self.player.loop = True
+
+            @self.player.event
+            def on_eos():
+                self.player.seek(0)
+                self.player.play()
+
             self.player.play()
-
-            def update_audio():
-                pyglet.clock.tick()
-                self.root.after(10, update_audio)
-
-            update_audio()
+            self.start_audio_loop()
         except Exception as e:
             print(f"Audio Error: {e}")
+
+    def start_audio_loop(self):
+        if self.audio_loop_running:
+            return
+
+        self.audio_loop_running = True
+
+        def update_audio():
+            if not self.audio_loop_running:
+                return
+            pyglet.clock.tick()
+            self.root.after(10, update_audio)
+
+        update_audio()
+
+    def stop_music(self):
+        self.audio_loop_running = False
+        if self.player is not None:
+            try:
+                self.player.pause()
+                self.player.delete()
+            except Exception:
+                pass
+            self.player = None
+
+    def handle_app_close(self):
+        self.stop_music()
+        self.root.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()

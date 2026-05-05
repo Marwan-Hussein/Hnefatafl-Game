@@ -1,6 +1,14 @@
 from .constants import (
-    BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING,
-    THRONE, CORNERS, in_bounds, is_special_square, is_enemy, is_friendly_piece
+    BOARD_SIZE,
+    EMPTY,
+    ATTACKER,
+    DEFENDER,
+    KING,
+    THRONE,
+    CORNERS,
+    in_bounds,
+    is_enemy,
+    is_friendly_piece,
 )
 
 
@@ -12,65 +20,16 @@ def find_king(board):
     return None
 
 
-def is_blocked(board, r, c, piece):
-    """Check if a specific direction is blocked for the King."""
+def is_capture_square(board, r, c, mover_piece):
+    """Return True when a square can support a capture for mover_piece."""
     if not in_bounds(r, c):
+        return False
+
+    piece = board[r][c]
+    if is_friendly_piece(piece, mover_piece):
         return True
-    if board[r][c] == ATTACKER:
-        return True
-    if (r, c) in CORNERS:
-        return True
-    if (r, c) == THRONE:
-        return True
-    return False
 
-
-def check_winner(state):
-    board = state.board
-    king_pos = find_king(board)
-
-    if king_pos is None:
-        return "attacker"  # King captured (safety rule)
-
-    kr, kc = king_pos
-
-    # 🏆 Defender win
-    if (kr, kc) in CORNERS:
-        return "defender"
-
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-
-    attackers = 0
-    natural_blockers = 0
-
-    for dr, dc in directions:
-        nr, nc = kr + dr, kc + dc
-
-        if not in_bounds(nr, nc):
-            natural_blockers += 1  # Board edge counts as natural blocker
-        elif board[nr][nc] == ATTACKER:
-            attackers += 1
-        elif (nr, nc) in CORNERS:
-            natural_blockers += 1  # Corner counts as natural blocker
-        elif (nr, nc) == THRONE and board[nr][nc] == EMPTY:
-            natural_blockers += 1  # Empty throne counts as natural blocker
-
-    # 🧠 Required attackers based on king position
-    # Total blocker capacity = 4, natural blockers reduce attacker requirement
-    if is_next_to_corner(kr, kc):
-        required_attackers = 2  # Need 2 attackers (2 natural blockers: edge+corner)
-    elif is_next_to_throne(kr, kc):
-        required_attackers = 3  # Need 3 attackers (1 natural blocker: throne)
-    elif is_on_edge(kr, kc):
-        required_attackers = 3  # Need 3 attackers (1 natural blocker: edge)
-    else:
-        required_attackers = 4  # Need 4 attackers (no natural blockers)
-
-    # King is captured only if there are enough attackers
-    if attackers >= required_attackers:
-        return "attacker"
-
-    return None
+    return piece == EMPTY and ((r, c) == THRONE or (r, c) in CORNERS)
 
 
 def is_on_edge(r, c):
@@ -89,6 +48,50 @@ def is_next_to_throne(r, c):
     return abs(r - tr) + abs(c - tc) == 1
 
 
+def get_required_king_attackers(kr, kc):
+    if is_next_to_corner(kr, kc):
+        return 2
+    if is_next_to_throne(kr, kc):
+        return 3
+    if is_on_edge(kr, kc):
+        return 3
+    return 4
+
+
+def is_king_captured(board):
+    king_pos = find_king(board)
+    if king_pos is None:
+        return True
+
+    kr, kc = king_pos
+    if (kr, kc) in CORNERS:
+        return False
+
+    attackers = 0
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        nr, nc = kr + dr, kc + dc
+        if in_bounds(nr, nc) and board[nr][nc] == ATTACKER:
+            attackers += 1
+
+    return attackers >= get_required_king_attackers(kr, kc)
+
+
+def check_winner(state):
+    board = state.board
+    king_pos = find_king(board)
+
+    if king_pos is None:
+        return "attacker"
+
+    if king_pos in CORNERS:
+        return "defender"
+
+    if is_king_captured(board):
+        return "attacker"
+
+    return None
+
+
 def capture_if_flanked(state, mover_piece, enemy_r, enemy_c, dr, dc):
     board = state.board
 
@@ -96,19 +99,14 @@ def capture_if_flanked(state, mover_piece, enemy_r, enemy_c, dr, dc):
         return
 
     enemy_piece = board[enemy_r][enemy_c]
-    if enemy_piece == EMPTY:
+    if enemy_piece == EMPTY or enemy_piece == KING:
         return
 
     if not is_enemy(enemy_piece, mover_piece):
         return
 
     br, bc = enemy_r + dr, enemy_c + dc
-    if not in_bounds(br, bc):
-        return
-
-    behind = board[br][bc]
-
-    if behind == ATTACKER or (behind == THRONE and board[br][bc] == EMPTY) or (behind in CORNERS and board[br][bc] == EMPTY):
+    if is_capture_square(board, br, bc, mover_piece):
         board[enemy_r][enemy_c] = EMPTY
 
 
@@ -122,40 +120,34 @@ def capture_sandwiched_pieces(state):
             if piece == EMPTY or piece == KING:
                 continue
 
-            # Horizontal
-            if in_bounds(r, c - 1) and in_bounds(r, c + 1):
-                left = board[r][c - 1]
-                right = board[r][c + 1]
+            captor_piece = DEFENDER if piece == ATTACKER else ATTACKER
 
-                if is_enemy(left, piece) and is_enemy(right, piece):
-                    board[r][c] = EMPTY
-                    continue
+            if (
+                is_capture_square(board, r, c - 1, captor_piece)
+                and is_capture_square(board, r, c + 1, captor_piece)
+            ):
+                board[r][c] = EMPTY
+                continue
 
-            # Vertical
-            if in_bounds(r - 1, c) and in_bounds(r + 1, c):
-                up = board[r - 1][c]
-                down = board[r + 1][c]
-
-                if is_enemy(up, piece) and is_enemy(down, piece):
-                    board[r][c] = EMPTY
-                    continue
+            if (
+                is_capture_square(board, r - 1, c, captor_piece)
+                and is_capture_square(board, r + 1, c, captor_piece)
+            ):
+                board[r][c] = EMPTY
+                continue
 
 
 def apply_captures(state, last_move):
-    fr, fc, tr, tc = last_move
-    board = state.board
-    mover_piece = board[tr][tc]
+    _, _, tr, tc = last_move
+    mover_piece = state.board[tr][tc]
 
     if mover_piece == KING:
         capture_sandwiched_pieces(state)
         return state
 
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-
-    for dr, dc in directions:
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         enemy_r = tr + dr
         enemy_c = tc + dc
-
         capture_if_flanked(state, mover_piece, enemy_r, enemy_c, dr, dc)
 
     capture_sandwiched_pieces(state)

@@ -7,6 +7,10 @@ import pyglet
 import os
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
+from game_logic.Game.constants import ATTACKER, DEFENDER, EMPTY, KING
+from game_logic.Game.moves import apply_move, get_piece_moves
+from game_logic.Game.rules import apply_captures, check_winner
+from game_logic.Game.state import GameState
 
 attacker_color = "#1C1D17"
 defender_color = "#BDA160"
@@ -14,14 +18,16 @@ dark_red = "#860F0F"
 
 
 class HnefataflGame:
-    def __init__(self, root, settings=None):
+    def __init__(self, root, settings=None, on_game_end=None):
         self.root = root
         self.settings = settings
+        self.on_game_end = on_game_end
         self.canvas = None
         self.images = {}  # Store references to prevent garbage collection
+        self.game_state = GameState()
 
         # Turn logic
-        self.current_turn_team = "attacker"  # Attackers usually start
+        self.current_turn_team = self.game_state.turn
         self.turn_label = None
 
         # Calculate scaling
@@ -74,7 +80,8 @@ class HnefataflGame:
         self.canvas.bind("<Button-1>", self.on_board_click)
 
     def update_turn_display(self):
-        team = self.current_turn_team
+        team = self.game_state.turn
+        self.current_turn_team = team
         display_text = ""
 
         if not self.settings:
@@ -164,59 +171,64 @@ class HnefataflGame:
 
         self.clear_selection()
 
-        if config.OCCUPIED_CELLS[i][j] == 0:
-            actor_tag = self.cell_actors.get(clicked_cell)
-            if actor_tag:
-                # Check if it's the correct turn's piece
-                actor_type = self.get_actor_type(actor_tag)
-                # King is always on the defender team
-                team = (
-                    "defender"
-                    if (actor_type == "defender" or actor_type == "king")
-                    else "attacker"
-                )
+        actor_tag = self.cell_actors.get(clicked_cell)
+        if actor_tag:
+            actor_type = self.get_actor_type(actor_tag)
+            team = (
+                "defender"
+                if (actor_type == "defender" or actor_type == "king")
+                else "attacker"
+            )
 
-                if team == self.current_turn_team:
-                    self.select_actor(actor_tag, clicked_cell)
-                else:
-                    print(f"It's {self.current_turn_team}'s turn!")
+            if team == self.game_state.turn:
+                self.select_actor(actor_tag, clicked_cell)
+            else:
+                print(f"It's {self.game_state.turn}'s turn!")
 
     def is_inside_board(self, i, j):
         return 0 <= i < config.BOARD_CELLS and 0 <= j < config.BOARD_CELLS
 
-    def show_available_moves(self, start_i, start_j):
-        actor_type = self.get_actor_type(self.selected_actor_tag)
-        directions = (
-            (0, 1),  # down
-            (0, -1),  # up
-            (1, 0),  # right
-            (-1, 0),  # left
-        )
+    def gui_to_logic_cell(self, cell):
+        col, row = cell
+        return row, col
 
+    def logic_to_gui_cell(self, row, col):
+        return col, row
+
+    def get_captured_cells(self, previous_board, move):
+        fr, fc, tr, tc = move
+        captured_cells = []
+
+        for row_idx, row in enumerate(previous_board):
+            for col_idx, previous_piece in enumerate(row):
+                current_piece = self.game_state.board[row_idx][col_idx]
+                if (
+                    previous_piece != EMPTY
+                    and current_piece == EMPTY
+                    and (row_idx, col_idx) != (fr, fc)
+                ):
+                    captured_cells.append(self.logic_to_gui_cell(row_idx, col_idx))
+
+        if self.game_state.board[tr][tc] == EMPTY:
+            captured_cells.append(self.logic_to_gui_cell(tr, tc))
+
+        return captured_cells
+
+    def show_available_moves(self, start_i, start_j):
         move_cells = set()
 
-        for di, dj in directions:
-            i = start_i + di
-            j = start_j + dj
+        start_row, start_col = self.gui_to_logic_cell((start_i, start_j))
+        legal_moves = get_piece_moves(self.game_state, start_row, start_col)
 
-            while self.is_inside_board(i, j):
-                # Stop if cell is occupied
-                if config.OCCUPIED_CELLS[i][j] == 0:
-                    break
-
-                # Stop if cell is a corner and the actor is not the King
-                if (i, j) in config.CORNERS and actor_type != "king":
-                    break
-
-                self.place_actor("dot.svg", config.cell(i, j), f"dot_{i}_{j}", 50)
-                move_cells.add((i, j))
-                
-                # If the king enters a corner, he can't go past it (though it's usually at the edge anyway)
-                if (i, j) in config.CORNERS:
-                    break
-                    
-                i += di
-                j += dj
+        for _, _, target_row, target_col in legal_moves:
+            gui_cell = self.logic_to_gui_cell(target_row, target_col)
+            self.place_actor(
+                "dot.svg",
+                config.cell(*gui_cell),
+                f"dot_{gui_cell[0]}_{gui_cell[1]}",
+                50,
+            )
+            move_cells.add(gui_cell)
 
         return move_cells
 
@@ -242,61 +254,105 @@ class HnefataflGame:
         if old_cell == new_cell or new_cell not in self.available_move_cells:
             return
 
-        actor_type = self.get_actor_type(actor_tag)
-        config.update_actor_position(actor_type, old_cell, new_cell)
+        old_row, old_col = self.gui_to_logic_cell(old_cell)
+        new_row, new_col = self.gui_to_logic_cell(new_cell)
+        move = (old_row, old_col, new_row, new_col)
+        previous_board = [row[:] for row in self.game_state.board]
 
-        new_x, new_y = self._get_canvas_coords(config.cell(*new_cell))
-        self.canvas.coords(actor_tag, new_x, new_y)
+        apply_move(self.game_state, move)
+        apply_captures(self.game_state, move)
 
-        self.actor_cells[actor_tag] = new_cell
+        captured_cells = self.get_captured_cells(previous_board, move)
+        moved_piece_survived = self.game_state.board[new_row][new_col] != EMPTY
+
         self.cell_actors.pop(old_cell, None)
-        self.cell_actors[new_cell] = actor_tag
 
-        old_cell = (old_cell[1], old_cell[0])
-        new_cell = (new_cell[1], new_cell[0])
+        if moved_piece_survived:
+            new_x, new_y = self._get_canvas_coords(config.cell(*new_cell))
+            self.canvas.coords(actor_tag, new_x, new_y)
+            self.actor_cells[actor_tag] = new_cell
+            self.cell_actors[new_cell] = actor_tag
+        else:
+            self.canvas.delete(actor_tag)
+            self.actor_cells.pop(actor_tag, None)
 
-        print(f"Moved {actor_tag}: {old_cell} -> {new_cell}")
+        print(f"Moved {actor_tag}: {(old_row, old_col)} -> {(new_row, new_col)}")
         self.clear_selection()
 
-        # Rule Processing: Captures and Winner
-        # old_cell and new_cell are (i, j) where i is column and j is row?
-        # Wait, config.cell(i, j) uses i as col, j as row.
-        # But board usually uses (row, col). Let's be consistent with config.
-        last_move = (old_cell[0], old_cell[1], new_cell[0], new_cell[1])
-        winner, captured_cells = config.process_game_step(last_move)
-
         for cell in captured_cells:
+            if cell == new_cell and not moved_piece_survived:
+                continue
             tag = self.cell_actors.pop(cell, None)
             if tag:
                 self.canvas.delete(tag)
                 if tag in self.actor_cells:
                     del self.actor_cells[tag]
 
+        winner = check_winner(self.game_state)
         if winner:
-            self.display_winner(winner)
-            self.game_over = True
+            self.end_game(winner)
             return
 
-        # Switch turns
-        self.current_turn_team = (
-            "defender" if self.current_turn_team == "attacker" else "attacker"
-        )
+        self.game_state.switch_turn()
+        self.current_turn_team = self.game_state.turn
         self.update_turn_display()
 
+    def end_game(self, winner):
+        self.game_over = True
+        self.clear_selection()
+        self.display_winner(winner)
+        if self.on_game_end:
+            self.root.after(2500, self.on_game_end)
+
     def display_winner(self, team):
-        # PLAYER' WIN [{team.capitalize()}]
-        text = f"PLAYER' WIN [{team.capitalize()}]"
-        bg_color = attacker_color if team.capitalize() == "ATTACKER" else defender_color
+        winner_name = team.capitalize()
+        text = f"Game Over: {winner_name} Wins"
+        detail_text = "This match has ended."
+        accent_color = attacker_color if team == "attacker" else defender_color
+
+        self.canvas.delete("winner_ui")
+        box_w = 640
+        box_h = 170
+        x1 = (self.screen_w - box_w) // 2
+        y1 = (self.screen_h - box_h) // 2
+        x2 = x1 + box_w
+        y2 = y1 + box_h
+
+        self.canvas.create_rectangle(
+            x1,
+            y1,
+            x2,
+            y2,
+            fill="#F5EDDA",
+            outline=accent_color,
+            width=4,
+            tags="winner_ui",
+        )
         self.canvas.create_text(
             self.screen_w // 2,
-            self.screen_h // 2,
+            self.screen_h // 2 - 22,
             text=text,
             font=("Georgia", 48, "bold"),
             fill=dark_red,
-            bg=bg_color,
-            tags="winner_msg",
+            tags="winner_ui",
         )
-        self.turn_label.config(text=text, fg=dark_red)
+        self.canvas.create_text(
+            self.screen_w // 2,
+            self.screen_h // 2 + 28,
+            text=detail_text,
+            font=("Georgia", 22, "bold"),
+            fill=accent_color,
+            tags="winner_ui",
+        )
+        self.turn_label.config(text=f"{text} - Match Ended", fg=dark_red)
+
+    def destroy_ui(self):
+        if self.canvas is not None and self.canvas.winfo_exists():
+            self.canvas.destroy()
+            self.canvas = None
+        if self.turn_label is not None and self.turn_label.winfo_exists():
+            self.turn_label.destroy()
+            self.turn_label = None
 
     def get_actor_type(self, actor_tag):
         if actor_tag == "king":
@@ -385,30 +441,35 @@ class HnefataflGame:
 
     # Loads and places all game actors (king, attackers, defenders) on the board
     def set_actors(self):
-        assets_dir = os.path.join(config.ASSETS_DIR)
+        self.actor_cells.clear()
+        self.cell_actors.clear()
 
-        # Place the king
-        self.place_actor("king.svg", config.KING_POSITION, "king")
-        self.actor_cells["king"] = config.KING_CELL
-        self.cell_actors[config.KING_CELL] = "king"
+        attacker_idx = 1
+        defender_idx = 1
 
-        # Place attackers
-        idx = 1
-        for cell, pos in config.ATTACKERS_POSITIONS.items():
-            tag = f"attacker_{idx}"
-            self.place_actor("Attacker.svg", pos, tag)
-            self.actor_cells[tag] = cell
-            self.cell_actors[cell] = tag
-            idx = idx + 1
-        print()
-        # Place defenders
-        idx = 1
-        for cell, pos in config.DEFENDER_POSITIONS.items():
-            tag = f"defender_{idx}"
-            self.place_actor("Defender.svg", pos, tag)
-            self.actor_cells[tag] = cell
-            self.cell_actors[cell] = tag
-            idx = idx + 1
+        for row_idx, row in enumerate(self.game_state.board):
+            for col_idx, piece in enumerate(row):
+                if piece == EMPTY:
+                    continue
+
+                gui_cell = self.logic_to_gui_cell(row_idx, col_idx)
+                position = config.cell(*gui_cell)
+
+                if piece == KING:
+                    tag = "king"
+                    image_filename = "king.svg"
+                elif piece == ATTACKER:
+                    tag = f"attacker_{attacker_idx}"
+                    image_filename = "Attacker.svg"
+                    attacker_idx += 1
+                else:
+                    tag = f"defender_{defender_idx}"
+                    image_filename = "Defender.svg"
+                    defender_idx += 1
+
+                self.place_actor(image_filename, position, tag)
+                self.actor_cells[tag] = gui_cell
+                self.cell_actors[gui_cell] = tag
 
 
 def play_background_music():
