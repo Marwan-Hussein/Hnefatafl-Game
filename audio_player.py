@@ -1,5 +1,7 @@
 import os
 from config import EFFECTS, ASSETS_DIR
+import time
+import threading
 
 try:
     import vlc
@@ -33,22 +35,32 @@ def _warn_audio_unavailable():
     _audio_warning_shown = True
 
 
-def play_background_music():
+def _bg_music_loop():
+    """handle the looping logic (background music) in a separate thread."""
     try:
+        # Use the global music_player we already created at the top of the file
         if instance is None or music_player is None:
             _warn_audio_unavailable()
             return
 
         audio_path = os.path.join(ASSETS_DIR, "audio", "Nordic-Folk.ogg")
-
         media = instance.media_new(audio_path)
-        media.add_option("input-repeat=-1")
         music_player.set_media(media)
-
         music_player.play()
 
+        while True:
+            # Check if the music finished
+            if music_player.get_state() == vlc.State.Ended:
+                music_player.stop()
+                music_player.play()
+            time.sleep(1)  # Sleep to prevent high CPU usage
     except Exception as e:
-        print(f"Audio Error: {e}")
+        print(f"Audio Error in thread: {e}")
+
+
+def play_background_music():
+    bg_thread = threading.Thread(target=_bg_music_loop, daemon=True)
+    bg_thread.start()
 
 
 def stop_background_music():
