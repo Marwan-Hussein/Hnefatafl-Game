@@ -29,11 +29,18 @@ Heuristics used:
   6. Positional advantage – defenders near the king (escort bonus)
 """
 
-from Game.constants import (
-    BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING,
-    THRONE, CORNERS, in_bounds
-)
-from Game.rules import check_winner, find_king
+try:
+    from ..Game.constants import (
+        BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING,
+        THRONE, CORNERS, in_bounds
+    )
+    from ..Game.rules import check_winner, find_king
+except ImportError:
+    from Game.constants import (
+        BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING,
+        THRONE, CORNERS, in_bounds
+    )
+    from Game.rules import check_winner, find_king
 
 # ── tuneable weights ───────────────────────────────────────────────────────────
 W_MATERIAL_ATTACKER  =  10   # score per attacker piece still on board
