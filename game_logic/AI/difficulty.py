@@ -1,11 +1,11 @@
 # ai/difficulty.py
 
 EASY = 1
-MEDIUM = 3
-HARD = 5
+MEDIUM = 2
+HARD = 3
 
 
-def get_depth(level):
+def get_depth(level):s
     level = level.lower()
 
     if level == "easy":
