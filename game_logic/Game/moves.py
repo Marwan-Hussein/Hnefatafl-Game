@@ -1,6 +1,14 @@
 from .constants import (
-    BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING,
-    THRONE, CORNERS, in_bounds, is_special_square, is_enemy
+    BOARD_SIZE,
+    EMPTY,
+    ATTACKER,
+    DEFENDER,
+    KING,
+    THRONE,
+    CORNERS,
+    in_bounds,
+    is_special_square,
+    is_enemy,
 )
 
 
@@ -50,7 +58,9 @@ def get_piece_moves(state, row, col):
 
             # only king can enter throne/corners
             if piece != KING and is_special_square(r, c):
-                break
+                r += dr
+                c += dc
+                continue
 
             # Allow moves into sandwich positions - piece will be captured after moving
             moves.append((row, col, r, c))

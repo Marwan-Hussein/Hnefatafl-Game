@@ -17,7 +17,7 @@ class HnefataflHome:
         self.audio_loop_running = False
         self.root.protocol("WM_DELETE_WINDOW", self.handle_app_close)
         
-        # Calculate scaling (same as canvas)
+        # Calculate scaling (same as canvas)]
         self.screen_w = root.winfo_screenwidth()
         self.screen_h = root.winfo_screenheight()
         self.root.geometry(f"{self.screen_w}x{self.screen_h}")

@@ -5,7 +5,7 @@ MEDIUM = 2
 HARD = 3
 
 
-def get_depth(level):s
+def get_depth(level):
     level = level.lower()
 
     if level == "easy":
