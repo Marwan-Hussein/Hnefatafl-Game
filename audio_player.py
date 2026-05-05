@@ -76,8 +76,7 @@ def play_effect(effect_name):
             _warn_audio_unavailable()
             return
 
-        filename = EFFECT_FILES.get(effect_name, effect_name)
-        effect_path = os.path.join(EFFECTS, filename)
+        effect_path = os.path.join(EFFECTS, effect_name)
 
         # create a NEW player for each effect (so multiple can overlap)
         effect_player = instance.media_player_new()

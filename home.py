@@ -4,7 +4,7 @@ import os
 import config
 from PIL import Image, ImageTk
 from canvas import HnefataflGame
-from audio_player import play_background_music, play_click_effect, stop_background_music
+from audio_player import play_background_music,play_effect ,stop_background_music, EFFECT
 
 back_ground_color = "#F5EDDA"
 dark_red = "#860F0F"
@@ -64,7 +64,7 @@ class HnefataflHome:
 
     def create_button(self, parent, text, command, width=25):
         def command_with_sound():
-            play_click_effect()
+            play_effect(EFFECT["click"])
             command()
 
         return tk.Button(
