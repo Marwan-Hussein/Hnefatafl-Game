@@ -17,10 +17,10 @@ initial_board([
   [e, e, a, a, a, a, a, e, e]   
 ]).
 
-%%  Corner squares 
+%%  Corners
 corner(1,1). corner(1,9). corner(9,1). corner(9,9).
 
-%%  Throne (center) 
+%%  Throne
 throne(5,5).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -109,7 +109,7 @@ all_moves(Board, Side, AllMoves) :-
             (   member(R1-C1-P, Pieces),
                 (is_king(P) -> IsKing = yes ; IsKing = no),
                 generate_rook_move(Board, R1, C1, IsKing, R2, C2),
-                %% EDIT 2: reject destination if the piece would be sandwiched there
+             
                 \+ would_be_sandwiched(Board, R1, C1, R2, C2, Side)
             ),
             AllMoves0),
@@ -297,7 +297,7 @@ king_threat_count(Board, KR, KC, Count) :-
 
 depth(easy,   1).
 depth(medium, 3).
-depth(hard,   5).
+depth(hard,   4).
 
 alphabeta(Board, Side, 0, _, _, null, Score) :-
     !,
@@ -492,7 +492,7 @@ choose_difficulty(Difficulty) :-
     write('Choose difficulty:'), nl,
     write('  1. Easy   (depth 1)'), nl,
     write('  2. Medium (depth 3)'), nl,
-    write('  3. Hard   (depth 5)'), nl,
+    write('  3. Hard   (depth 4)'), nl,
     write('Enter 1, 2 or 3: '),
     read(DChoice),
     (   DChoice =:= 1 -> Difficulty = easy
