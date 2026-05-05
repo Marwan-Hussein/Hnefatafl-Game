@@ -89,7 +89,7 @@ class HnefataflHome:
 
     def select_hvh(self):
         self.selection_data["mode"] = "HvH"
-        self.show_side_selection()
+        self.start_game("attacker")
 
     def select_hvc(self):
         self.selection_data["mode"] = "HvC"
