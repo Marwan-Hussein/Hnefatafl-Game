@@ -1,25 +1,3 @@
-# You implement:
-# minimax with pruning
-# uses:
-# moves.py
-# evaluation.py
-# depth control (easy/medium/hard)
-# Goal:
-#
-# AI can pick best move
-# ai/alphabeta.py
-
-"""
-ai/alphabeta.py
-
-Alpha-beta pruning minimax for Hnefatafl.
-Uses:
-  - Game.moves    : get_all_moves, apply_move
-  - Game.rules    : apply_captures, check_winner
-  - AI.evaluation : evaluate
-  - AI.difficulty : get_depth
-"""
-
 try:
     from ..Game.moves import get_all_moves, apply_move
     from ..Game.rules import apply_captures, check_winner
@@ -39,10 +17,6 @@ def _opponent(player):
 
 
 def _apply_and_capture(state, move):
-    """
-    Return a NEW state after applying move + captures.
-    Does NOT modify the original state.
-    """
     new_state = state.copy()
     apply_move(new_state, move)
     apply_captures(new_state, move)
@@ -50,10 +24,6 @@ def _apply_and_capture(state, move):
 
 
 def _order_moves(state, moves, player):
-    """
-    Shallow move ordering: score each move so we search
-    promising branches first → better pruning.
-    """
     def quick_score(move):
         s = _apply_and_capture(state, move)
         return evaluate(s, player)
@@ -64,23 +34,6 @@ def _order_moves(state, moves, player):
 # ── alpha-beta ────────────────────────────────────────────────────────────────
 
 def alphabeta(state, depth, alpha, beta, maximizing_player, ai_player):
-    """
-    Standard alpha-beta minimax.
-
-    Parameters
-    ----------
-    state             : current GameState
-    depth             : plies remaining
-    alpha, beta       : pruning bounds
-    maximizing_player : True  → it's ai_player's turn
-                        False → it's opponent's turn
-    ai_player         : the side the AI is playing ("attacker" / "defender")
-
-    Returns
-    -------
-    float : heuristic value of the state
-    """
-    # ── terminal / leaf ───────────────────────────────────────────────────────
     winner = check_winner(state)
     if winner is not None:
         return INF if winner == ai_player else -INF
@@ -94,7 +47,7 @@ def alphabeta(state, depth, alpha, beta, maximizing_player, ai_player):
     if not moves:
         return -INF if maximizing_player else INF
 
-    # move ordering only at higher depths to keep overhead reasonable
+    
     if depth >= 4:
         moves = _order_moves(state, moves, current_player)
 
@@ -106,7 +59,7 @@ def alphabeta(state, depth, alpha, beta, maximizing_player, ai_player):
             value = max(value, alphabeta(child, depth - 1, alpha, beta, False, ai_player))
             alpha = max(alpha, value)
             if alpha >= beta:
-                break          # β-cutoff
+                break          
         return value
 
     else:
@@ -117,26 +70,13 @@ def alphabeta(state, depth, alpha, beta, maximizing_player, ai_player):
             value = min(value, alphabeta(child, depth - 1, alpha, beta, True, ai_player))
             beta = min(beta, value)
             if beta <= alpha:
-                break          # α-cutoff
+                break         
         return value
 
 
 # ── public interface ──────────────────────────────────────────────────────────
 
 def get_best_move(state, player, level="medium"):
-    """
-    Choose the best move for `player` at the given difficulty level.
-
-    Parameters
-    ----------
-    state  : current GameState
-    player : "attacker" or "defender"
-    level  : "easy" | "medium" | "hard"
-
-    Returns
-    -------
-    tuple (fr, fc, tr, tc) or None if no moves exist
-    """
     depth = get_depth(level)
     moves = get_all_moves(state, player)
 
@@ -155,7 +95,7 @@ def get_best_move(state, player, level="medium"):
             depth - 1,
             -INF,
             INF,
-            False,      # opponent moves next → minimizing
+            False,      
             player
         )
 
