@@ -1,44 +1,11 @@
-# ai/evaluation.py
-#utility function here
-# You implement:
-# - board scoring function
-# - evaluates a game state from a given player's perspective
-# - heuristics:
-#     * material advantage (attackers vs defenders)
-#     * king safety (distance to escape corners)
-#     * positional advantage
-#
-# Goal:
-# - assign a numeric score to any board state
-# - used by alpha-beta pruning to choose best move
-# ai/evaluation.py
-"""
-ai/evaluation.py
-
-Board scoring / utility function for Hnefatafl (9x9).
-Returns a numeric score from the perspective of `player`.
-  positive  ->  good for `player`
-  negative  ->  bad  for `player`
-
-Heuristics used:
-  1. Terminal detection  – immediate win / loss = ±infinity
-  2. Material advantage  – attacker count vs defender count
-  3. King safety         – distance of king to nearest corner
-  4. King mobility       – number of open squares the king can reach
-  5. Attacker encirclement – how many of the king's 4 sides are threatened
-  6. Positional advantage – defenders near the king (escort bonus)
-"""
-
 try:
     from ..Game.constants import (
-        BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING,
-        THRONE, CORNERS, in_bounds
+        BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, CORNERS, in_bounds
     )
     from ..Game.rules import check_winner, find_king
 except ImportError:
     from Game.constants import (
-        BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, KING,
-        THRONE, CORNERS, in_bounds
+        BOARD_SIZE, EMPTY, ATTACKER, DEFENDER, CORNERS, in_bounds
     )
     from Game.rules import check_winner, find_king
 
@@ -56,7 +23,7 @@ INF = 10_000
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _count_pieces(board):
-    """Return (num_attackers, num_defenders) on the board."""
+    
     attackers = defenders = 0
     for r in range(BOARD_SIZE):
         for c in range(BOARD_SIZE):
@@ -69,15 +36,11 @@ def _count_pieces(board):
 
 
 def _min_corner_distance(kr, kc):
-    """Manhattan distance from king to the nearest corner."""
     return min(abs(kr - cr) + abs(kc - cc) for cr, cc in CORNERS)
 
 
 def _king_adjacency(board, kr, kc):
-    """
-    Return (attacker_neighbours, defender_neighbours, open_neighbours).
-    Only the four orthogonal directions matter.
-    """
+
     att = def_ = open_ = 0
     for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         nr, nc = kr + dr, kc + dc
@@ -94,9 +57,6 @@ def _king_adjacency(board, kr, kc):
 
 
 def _king_mobility(board, kr, kc):
-    """
-    Count squares the king can actually reach (rook-style, stopping at obstacles).
-    """
     reachable = 0
     for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         r, c = kr + dr, kc + dc
@@ -110,11 +70,6 @@ def _king_mobility(board, kr, kc):
 # ── main scoring function ─────────────────────────────────────────────────────
 
 def evaluate(state, player):
-    """
-    Evaluate the board from `player`'s perspective.
-    `player` is "attacker" or "defender".
-    Returns a signed integer score.
-    """
     board = state.board
 
     # ── 1. terminal check ──────────────────────────────────────────────────────
@@ -149,18 +104,16 @@ def evaluate(state, player):
     escort_score       = W_ESCORT       * def_adj
 
     # ── defender's perspective ─────────────────────────────────────────────────
-    # wants: king close to corner, mobile, escorted, fewer attackers alive
     defender_score = (
         king_distance_score
         + king_mobility_score
-        - encirclement_score           # bad when attackers surround king
+        - encirclement_score           
         + escort_score
         + W_MATERIAL_DEFENDER * num_def
         - W_MATERIAL_ATTACKER * num_att
     )
 
     # ── attacker's perspective ─────────────────────────────────────────────────
-    # wants: king far from corner, surrounded, fewer defenders alive
     attacker_score = (
         - king_distance_score
         - king_mobility_score
