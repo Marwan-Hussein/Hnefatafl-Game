@@ -2,7 +2,7 @@
 
 Welcome to **Hnefatafl**, an ancient Nordic board game of strategy and skill. Often referred to as "The Viking Game," Hnefatafl pits a large attacking army against a smaller group of defenders protecting their King.
 
-![Hnefatafl](assets\GameBackground.png)
+![Hnefatafl](assets/GameBackground.png)
 
 ## 🎮 Game Overview
 
@@ -74,10 +74,10 @@ Ensure you have **Python 3.x** installed on your system.
 
 This project was developed by a team of dedicated individuals:
 
-- **![Marwan Hussein](https://github.com/Marwan-Hussein)** - UI designer / GUI
-- **![Ahmed Abdellatef](https://github.com/Ahmed-3bdellatif)** - Controllers
-- **![Youssef Hossam](https://github.com/yousefjjoooo)** - Core logic in Python/prolog
-- **![Abdo Emam](https://github.com/Abd-elrahman10)** - Core logic in Python
+- **[Marwan Hussein](https://github.com/Marwan-Hussein)** - UI designer / GUI
+- **[Ahmed Abdellatef](https://github.com/Ahmed-3bdellatif)** - Controllers
+- **[Youssef Hossam](https://github.com/yousefjjoooo)** - Core logic in Python/prolog
+- **[Abdo Emam](https://github.com/Abd-elrahman10)** - Core logic in Python
 
 ---
 
