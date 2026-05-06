@@ -108,9 +108,7 @@ all_moves(Board, Side, AllMoves) :-
     findall(move(R1,C1,R2,C2),
             (   member(R1-C1-P, Pieces),
                 (is_king(P) -> IsKing = yes ; IsKing = no),
-                generate_rook_move(Board, R1, C1, IsKing, R2, C2),
-             
-                \+ would_be_sandwiched(Board, R1, C1, R2, C2, Side)
+                generate_rook_move(Board, R1, C1, IsKing, R2, C2)
             ),
             AllMoves0),
     sort(AllMoves0, AllMoves).
@@ -154,6 +152,40 @@ is_enemy_jaw(_, R, C, _) :-
 is_enemy_jaw(_, R, C, _) :-
     corner(R, C).
 
+%%  capture_sandwiched_pieces/2
+%%  Remove any non-king piece that is trapped between enemy jaws.
+capture_sandwiched_pieces(Board, NewBoard) :-
+    findall(R-C,
+            (   between(1,9,R), between(1,9,C),
+                get_cell(Board, R, C, P),
+                P \= e,
+                \+ is_king(P),
+                belongs_to(P, PieceSide),
+                other_side(PieceSide, CaptorSide),
+                is_sandwiched(Board, R, C, CaptorSide)
+            ),
+            Sandwiched),
+    remove_pieces(Board, Sandwiched, NewBoard).
+
+is_sandwiched(Board, R, C, CaptorSide) :-
+    check_capture_jaw(Board, R, C, 0, 1, CaptorSide),
+    check_capture_jaw(Board, R, C, 0, -1, CaptorSide).
+is_sandwiched(Board, R, C, CaptorSide) :-
+    check_capture_jaw(Board, R, C, 1, 0, CaptorSide),
+    check_capture_jaw(Board, R, C, -1, 0, CaptorSide).
+
+check_capture_jaw(Board, R, C, DR, DC, CaptorSide) :-
+    R1 is R + DR,
+    C1 is C + DC,
+    R1 >= 1, R1 =< 9,
+    C1 >= 1, C1 =< 9,
+    get_cell(Board, R1, C1, P),
+    (
+        belongs_to(P, CaptorSide)
+    ;   (throne(R1, C1), get_cell(Board, R1, C1, e))
+    ;   corner(R1, C1)
+    ).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   APPLY MOVE AND CAPTURES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -196,7 +228,8 @@ perform_captures(Board, R, C, Side, NewBoard) :-
                 \+ is_king(MovedPiece)
             ),
             Captured),
-    remove_pieces(Board, Captured, NewBoard).
+    remove_pieces(Board, Captured, Board1),
+    capture_sandwiched_pieces(Board1, NewBoard).
 
 remove_pieces(Board, [], Board).
 remove_pieces(Board, [R-C|Rest], NewBoard) :-
@@ -296,8 +329,8 @@ king_threat_count(Board, KR, KC, Count) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 depth(easy,   1).
-depth(medium, 3).
-depth(hard,   4).
+depth(medium, 2).
+depth(hard,   3).
 
 alphabeta(Board, Side, 0, _, _, null, Score) :-
     !,
@@ -479,7 +512,7 @@ choose_human_side(Side) :-
     nl,
     write('Choose your side:'), nl,
     write('  1. Attacker (Black - moves first)'), nl,
-    write('  2. Defender (White - protects the King)'), nl,
+    write('  2. Defender (White)'), nl,
     write('Enter 1 or 2: '),
     read(Choice),
     (   Choice =:= 1 -> Side = attacker
@@ -491,8 +524,8 @@ choose_difficulty(Difficulty) :-
     nl,
     write('Choose difficulty:'), nl,
     write('  1. Easy   (depth 1)'), nl,
-    write('  2. Medium (depth 3)'), nl,
-    write('  3. Hard   (depth 4)'), nl,
+    write('  2. Medium (depth 2)'), nl,
+    write('  3. Hard   (depth 3)'), nl,
     write('Enter 1, 2 or 3: '),
     read(DChoice),
     (   DChoice =:= 1 -> Difficulty = easy
