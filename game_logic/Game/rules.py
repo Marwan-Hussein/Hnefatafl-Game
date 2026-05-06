@@ -21,7 +21,6 @@ def find_king(board):
 
 
 def is_capture_square(board, r, c, mover_piece):
-    """Return True when a square can support a capture for mover_piece."""
     if not in_bounds(r, c):
         return False
 

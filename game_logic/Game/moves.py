@@ -18,7 +18,6 @@ def is_sandwich(board, r, c, mover_piece):
     horizontally or vertically.
     This will not block friendly formations like D - D for the king.
     """
-    # horizontal check
     if in_bounds(r, c - 1) and in_bounds(r, c + 1):
         left = board[r][c - 1]
         right = board[r][c + 1]
@@ -27,7 +26,6 @@ def is_sandwich(board, r, c, mover_piece):
             if is_enemy(left, mover_piece) and is_enemy(right, mover_piece):
                 return True
 
-    # vertical check
     if in_bounds(r - 1, c) and in_bounds(r + 1, c):
         up = board[r - 1][c]
         down = board[r + 1][c]
@@ -56,13 +54,11 @@ def get_piece_moves(state, row, col):
             if board[r][c] != EMPTY:
                 break
 
-            # only king can enter throne/corners
             if piece != KING and is_special_square(r, c):
                 r += dr
                 c += dc
                 continue
 
-            # Allow moves into sandwich positions - piece will be captured after moving
             moves.append((row, col, r, c))
             r += dr
             c += dc
