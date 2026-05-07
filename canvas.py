@@ -4,8 +4,6 @@ from PIL import Image, ImageTk
 import cairosvg
 import io
 import os
-from svglib.svglib import svg2rlg
-from reportlab.graphics import renderPM
 from audio_player import *
 from game_logic.Game.constants import ATTACKER, DEFENDER, EMPTY, KING
 from game_logic.Game.moves import apply_move, get_all_moves, get_piece_moves
@@ -47,10 +45,77 @@ class HnefataflGame:
         self.ai_turn_pending = False
 
         self.setup_ui()
+        self.add_info_button()
         self.draw_board()
         self.set_actors()
         self.update_turn_display()
         self.root.after(150, self.maybe_schedule_ai_turn)
+
+    def add_info_button(self):
+        # Info Button
+        info_img_path = os.path.join(config.ASSETS_DIR, "info.png")
+        if os.path.exists(info_img_path):
+            img = Image.open(info_img_path)
+            img = img.resize((50, 50), Image.LANCZOS)
+            self.info_photo = ImageTk.PhotoImage(img)
+
+            self.info_btn = tk.Button(
+                self.root,
+                image=self.info_photo,
+                command=self.show_rules,
+                bg="#F5EDDA",
+                activebackground="#F5EDDA",
+                bd=0,
+                cursor="hand2",
+            )
+            self.info_btn.place(relx=0.98, rely=0.02, anchor="ne")
+
+    def show_rules(self):
+        play_effect(EFFECT["click"])
+        # Create a top-level window for rules
+        rules_win = tk.Toplevel(self.root)
+        rules_win.title("Game Rules")
+        rules_win.attributes("-fullscreen", True)
+        rules_win.configure(bg="#F5EDDA")
+
+        # Load Rules image
+        rules_img_path = os.path.join(config.ASSETS_DIR, "Rules.png")
+        if os.path.exists(rules_img_path):
+            img = Image.open(rules_img_path)
+
+            # Resize image to fit screen while maintaining aspect ratio
+            screen_w = self.root.winfo_screenwidth()
+            screen_h = self.root.winfo_screenheight()
+
+            img.thumbnail((screen_w, screen_h - 150), Image.LANCZOS)
+            photo = ImageTk.PhotoImage(img)
+
+            # Keep reference
+            rules_win.photo = photo
+
+            label = tk.Label(rules_win, image=photo, bg="#F5EDDA")
+            label.pack(pady=20, expand=True)
+
+        def close_rules():
+            play_effect(EFFECT["click"])
+            rules_win.destroy()
+
+        # Create OK button with consistent style
+        btn_ok = tk.Button(
+            rules_win,
+            text="OK",
+            command=close_rules,
+            font=("Georgia", 16, "bold"),
+            bg=dark_red,
+            fg="#F5EDDA",
+            activebackground="#B11616",
+            activeforeground="#F5EDDA",
+            width=15,
+            height=2,
+            bd=0,
+            cursor="hand2",
+        )
+        btn_ok.pack(pady=20)
 
     # Initializes the canvas and basic window properties.
     def setup_ui(self):
@@ -438,6 +503,9 @@ class HnefataflGame:
         if self.turn_label is not None and self.turn_label.winfo_exists():
             self.turn_label.destroy()
             self.turn_label = None
+        if hasattr(self, "info_btn") and self.info_btn is not None and self.info_btn.winfo_exists():
+            self.info_btn.destroy()
+            self.info_btn = None
 
     def get_actor_type(self, actor_tag):
         if actor_tag == "king":

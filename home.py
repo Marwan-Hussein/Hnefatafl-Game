@@ -35,7 +35,60 @@ class HnefataflHome:
         self.setup_ui()
         play_background_music()
 
+    def add_info_button(self):
+        # Info Button
+        info_img_path = os.path.join(config.ASSETS_DIR, "info.png")
+        if os.path.exists(info_img_path):
+            img = Image.open(info_img_path)
+            img = img.resize((50, 50), Image.LANCZOS)
+            self.info_photo = ImageTk.PhotoImage(img)
+
+            self.info_btn = tk.Button(
+                self.main_frame,
+                image=self.info_photo,
+                command=self.show_rules,
+                bg=back_ground_color,
+                activebackground=back_ground_color,
+                bd=0,
+                cursor="hand2",
+            )
+            self.info_btn.place(relx=0.98, rely=0.02, anchor="ne")
+
+    def show_rules(self):
+        play_effect(EFFECT["click"])
+        # Create a top-level window for rules
+        rules_win = tk.Toplevel(self.root)
+        rules_win.title("Game Rules")
+        rules_win.attributes("-fullscreen", True)
+        rules_win.configure(bg=back_ground_color)
+
+        # Load Rules image
+        rules_img_path = os.path.join(config.ASSETS_DIR, "Rules.png")
+        if os.path.exists(rules_img_path):
+            img = Image.open(rules_img_path)
+
+            # Resize image to fit screen while maintaining aspect ratio
+            screen_w = self.root.winfo_screenwidth()
+            screen_h = self.root.winfo_screenheight()
+
+            img.thumbnail((screen_w, screen_h - 150), Image.LANCZOS)
+            photo = ImageTk.PhotoImage(img)
+
+            # Keep reference
+            rules_win.photo = photo
+
+            label = tk.Label(rules_win, image=photo, bg=back_ground_color)
+            label.pack(pady=20, expand=True)
+
+        def close_rules():
+            play_effect(EFFECT["click"])
+            rules_win.destroy()
+
+        btn_ok = self.create_button(rules_win, "OK", close_rules, width=15)
+        btn_ok.pack(pady=20)
+
     def setup_ui(self):
+        self.add_info_button()
         # Background Logo or Title
         title_label = tk.Label(
             self.main_frame,
